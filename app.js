@@ -34,7 +34,7 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
-app.use("/", () => {
+app.use("/", (req,res) => {
   res.status(StatusCodes.OK).json({ msg: "Welcome to the Jobs-Api" });
 });
 
