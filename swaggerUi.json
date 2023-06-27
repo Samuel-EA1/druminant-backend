@@ -1,0 +1,334 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "jobs api",
+    "contact": {},
+    "version": "1.0"
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "https://jobs-api-livid.vercel.app/",
+      "variables": {}
+    }
+  ],
+  "paths": {
+    "/jobs": {
+      "get": {
+        "tags": ["Misc"],
+        "summary": "All jobs",
+        "operationId": "Alljobs",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false
+      },
+      "post": {
+        "tags": ["Misc"],
+        "summary": "Create job",
+        "operationId": "Createjob",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/CreatejobRequest"
+                  },
+                  {
+                    "examples": [
+                      {
+                        "company": "capo",
+                        "position": "backend"
+                      }
+                    ]
+                  }
+                ],
+                "contentMediaType": "application/json"
+              },
+              "example": {
+                "company": "capo",
+                "position": "backend"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false
+      },
+      "parameters": []
+    },
+    "/jobs/{id}": {
+      "delete": {
+        "tags": ["Misc"],
+        "summary": "Delete job",
+        "operationId": "Deletejob",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false
+      },
+      "parameters": []
+    },
+    "/jobs/{id}": {
+      "get": {
+        "tags": ["Misc"],
+        "summary": "single job",
+        "operationId": "singlejob",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false,
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": ["Misc"],
+        "summary": "update Job",
+        "operationId": "updateJob",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/updateJobRequest"
+                  },
+                  {
+                    "examples": [
+                      {
+                        "company": "micrphone",
+                        "position": "for rap"
+                      }
+                    ]
+                  }
+                ],
+                "contentMediaType": "application/json"
+              },
+              "example": {
+                "company": "micrphone",
+                "position": "for rap"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false,
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "parameters": []
+    },
+    "/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register",
+        "operationId": "Register",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/RegisterRequest"
+                  },
+                  {
+                    "examples": [
+                      {
+                        "name": "solo"
+                      }
+                    ]
+                  }
+                ],
+                "contentMediaType": "application/json"
+              },
+              "example": {
+                "name": "solo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false,
+        "security": []
+      },
+      "parameters": []
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login user",
+        "operationId": "Loginuser",
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LoginuserRequest"
+                  },
+                  {
+                    "examples": [
+                      {
+                        "email": "peter@gmail.com",
+                        "password": "peter111"
+                      }
+                    ]
+                  }
+                ],
+                "contentMediaType": "application/json"
+              },
+              "example": {
+                "email": "peter@gmail.com",
+                "password": "peter111"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "headers": {}
+          }
+        },
+        "deprecated": false,
+        "security": []
+      },
+      "parameters": []
+    }
+  },
+  "components": {
+    "schemas": {
+      "updateJobRequest": {
+        "title": "updateJobRequest",
+        "required": ["company", "position"],
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          }
+        },
+        "examples": [
+          {
+            "company": "micrphone",
+            "position": "for rap"
+          }
+        ]
+      },
+      "RegisterRequest": {
+        "title": "RegisterRequest",
+        "required": ["name"],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "examples": [
+          {
+            "name": "solo"
+          }
+        ]
+      },
+      "LoginuserRequest": {
+        "title": "LoginuserRequest",
+        "required": ["email", "password"],
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "examples": [
+          {
+            "email": "peter@gmail.com",
+            "password": "peter111"
+          }
+        ]
+      },
+      "CreatejobRequest": {
+        "title": "CreatejobRequest",
+        "required": ["company", "position"],
+        "type": "object",
+        "properties": {
+          "company": {
+            "type": "string"
+          },
+          "position": {
+            "type": "string"
+          }
+        },
+        "examples": [
+          {
+            "company": "capo",
+            "position": "backend"
+          }
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": ""
+    }
+  ]
+}

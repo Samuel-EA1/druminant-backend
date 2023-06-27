@@ -6,6 +6,8 @@ const helmet = require("helmet");
 const cors = require("cors");
 const xss = require("xss-clean");
 const rateLimit = require("express-rate-limit");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./swaggerUi.json");
 
 // security packages
 app.use(helmet());
@@ -34,9 +36,15 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
-app.use("/", (req,res) => {
-  res.status(StatusCodes.OK).json({ msg: "Welcome to the Jobs-Api" });
+app.use("/", (req, res) => {
+  res
+    .status(StatusCodes.OK)
+    .send(
+      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check our the documentation here</a> </div>`
+    );
 });
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // routes
 app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
