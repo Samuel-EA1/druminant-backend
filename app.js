@@ -48,7 +48,7 @@ const port = process.env.PORT || 3000;
 
 const start = async () => {
   try {
-    await connectDb(process.env.MONGO_URI);
+    await connectDb(process.env.MONGO_URI.toString());
     app.listen(port, () =>
       console.log(`Server is listening on port ${port}...`)
     );
@@ -58,3 +58,6 @@ const start = async () => {
 };
 
 start();
+
+// Export the Express app
+module.exports = app;
