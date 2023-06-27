@@ -2,11 +2,10 @@ require("dotenv").config();
 require("express-async-errors");
 const express = require("express");
 const app = express();
-const helmet = require('helmet');
-const cors = require('cors');
-const xss = require('xss-clean');
-const rateLimit = require('express-rate-limit');
-
+const helmet = require("helmet");
+const cors = require("cors");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
 
 // security packages
 app.use(helmet());
@@ -19,10 +18,6 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-
-
-
-
 // DB
 const connectDb = require("./db/connect");
 
@@ -34,9 +29,14 @@ const jobsRoutes = require("./routes/jobs");
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 const authMiddleware = require("./middleware/authentication");
+const { StatusCodes } = require("http-status-codes");
 
 app.use(express.json());
 // extra packages
+
+app.use("/", () => {
+  res.status(StatusCodes.OK).json({ msg: "Welcome to the Jobs-Api" });
+});
 
 // routes
 app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
