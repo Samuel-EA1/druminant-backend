@@ -36,8 +36,12 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
+// routes
+app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
+app.use("/api/v1/auth", authRoutes);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-app.use("/", (req, res) => {
+app.get("/", (req, res) => {
   res
     .status(StatusCodes.OK)
     .send(
@@ -45,9 +49,6 @@ app.use("/", (req, res) => {
     );
 });
 
-// routes
-app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
-app.use("/api/v1/auth", authRoutes);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
