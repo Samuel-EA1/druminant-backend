@@ -7,7 +7,9 @@ const cors = require("cors");
 const xss = require("xss-clean");
 const rateLimit = require("express-rate-limit");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swaggerUi.json");
+
+const YAML = require("yamljs");
+const fs = require("fs");
 
 // security packages
 app.use(helmet());
@@ -36,7 +38,13 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Read the YAML file
+const swaggerDocument = fs.readFileSync("./swaggerUi.yaml", "utf8");
+// Convert YAML to JavaScript object
+const swaggerObject = YAML.parse(swaggerDocument);
+
+// Serve Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerObject));
 
 // routes
 app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
