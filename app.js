@@ -45,7 +45,7 @@ app.use("/", (req, res) => {
   res
     .status(StatusCodes.OK)
     .send(
-      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check our the documentation here</a> </div>`
+      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check out the documentation here</a> </div>`
     );
 });
 app.use(notFoundMiddleware);
