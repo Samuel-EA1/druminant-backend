@@ -7,9 +7,7 @@ const cors = require("cors");
 const xss = require("xss-clean");
 const rateLimit = require("express-rate-limit");
 const swaggerUi = require("swagger-ui-express");
-
-const YAML = require("yamljs");
-const fs = require("fs");
+const swaggerDocument = require("./swaggerUi.json");
 
 // security packages
 app.use(helmet());
@@ -38,24 +36,18 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
-// Read the YAML file
-const swaggerDocument = fs.readFileSync("./swaggerUi.yaml", "utf8");
-// Convert YAML to JavaScript object
-const swaggerObject = YAML.parse(swaggerDocument);
-
-// Serve Swagger UI
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerObject));
-
-// routes
-app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
-app.use("/api/v1/auth", authRoutes);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use("/", (req, res) => {
   res
     .status(StatusCodes.OK)
     .send(
-      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check out the documentation here</a> </div>`
+      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check our the documentation here</a> </div>`
     );
 });
+
+// routes
+app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
+app.use("/api/v1/auth", authRoutes);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
