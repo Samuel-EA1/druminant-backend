@@ -36,6 +36,11 @@ const { StatusCodes } = require("http-status-codes");
 app.use(express.json());
 // extra packages
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// routes
+app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
+app.use("/api/v1/auth", authRoutes);
 app.use("/", (req, res) => {
   res
     .status(StatusCodes.OK)
@@ -43,12 +48,6 @@ app.use("/", (req, res) => {
       `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check our the documentation here</a> </div>`
     );
 });
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-// routes
-app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
-app.use("/api/v1/auth", authRoutes);
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 

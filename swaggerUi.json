@@ -1,21 +1,20 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.0.0",
   "info": {
     "title": "jobs api",
     "contact": {},
     "version": "1.0"
   },
-  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [
     {
-      "url": "https://jobs-api-livid.vercel.app/",
+      "url": "https://jobs-api-livid.vercel.app/api/v1",
       "variables": {}
     }
   ],
   "paths": {
     "/jobs": {
       "get": {
-        "tags": ["Misc"],
+        "tags": ["Jobs"],
         "summary": "All jobs",
         "operationId": "Alljobs",
         "parameters": [],
@@ -28,7 +27,7 @@
         "deprecated": false
       },
       "post": {
-        "tags": ["Misc"],
+        "tags": ["Jobs"],
         "summary": "Create job",
         "operationId": "Createjob",
         "parameters": [],
@@ -42,19 +41,16 @@
                     "$ref": "#/components/schemas/CreatejobRequest"
                   },
                   {
-                    "examples": [
-                      {
-                        "company": "capo",
-                        "position": "backend"
-                      }
-                    ]
+                    "example": {
+                      "company": "Facebook",
+                      "position": "React native developer"
+                    }
                   }
-                ],
-                "contentMediaType": "application/json"
+                ]
               },
               "example": {
-                "company": "capo",
-                "position": "backend"
+                "company": "Facebook",
+                "position": "React native developer"
               }
             }
           },
@@ -67,12 +63,11 @@
           }
         },
         "deprecated": false
-      },
-      "parameters": []
+      }
     },
     "/jobs/{id}": {
       "delete": {
-        "tags": ["Misc"],
+        "tags": ["Jobs"],
         "summary": "Delete job",
         "operationId": "Deletejob",
         "parameters": [],
@@ -84,11 +79,8 @@
         },
         "deprecated": false
       },
-      "parameters": []
-    },
-    "/jobs/{id}": {
       "get": {
-        "tags": ["Misc"],
+        "tags": ["Jobs"],
         "summary": "single job",
         "operationId": "singlejob",
         "parameters": [],
@@ -106,7 +98,7 @@
         ]
       },
       "patch": {
-        "tags": ["Misc"],
+        "tags": ["Jobs"],
         "summary": "update Job",
         "operationId": "updateJob",
         "parameters": [],
@@ -120,19 +112,16 @@
                     "$ref": "#/components/schemas/updateJobRequest"
                   },
                   {
-                    "examples": [
-                      {
-                        "company": "micrphone",
-                        "position": "for rap"
-                      }
-                    ]
+                    "example": {
+                      "company": "Facebook",
+                      "position": "React native developer"
+                    }
                   }
-                ],
-                "contentMediaType": "application/json"
+                ]
               },
               "example": {
-                "company": "micrphone",
-                "position": "for rap"
+                "company": "Facebook",
+                "position": "React native developer"
               }
             }
           },
@@ -150,8 +139,7 @@
             "bearer": []
           }
         ]
-      },
-      "parameters": []
+      }
     },
     "/auth/register": {
       "post": {
@@ -169,17 +157,18 @@
                     "$ref": "#/components/schemas/RegisterRequest"
                   },
                   {
-                    "examples": [
-                      {
-                        "name": "solo"
-                      }
-                    ]
+                    "example": {
+                      "name": "John",
+                      "email": "Johnpeter@gmail.com",
+                      "password": "johnpeter"
+                    }
                   }
-                ],
-                "contentMediaType": "application/json"
+                ]
               },
               "example": {
-                "name": "solo"
+                "name": "John",
+                "email": "Johnpeter@gmail.com",
+                "password": "johnpeter"
               }
             }
           },
@@ -193,8 +182,7 @@
         },
         "deprecated": false,
         "security": []
-      },
-      "parameters": []
+      }
     },
     "/auth/login": {
       "post": {
@@ -212,19 +200,16 @@
                     "$ref": "#/components/schemas/LoginuserRequest"
                   },
                   {
-                    "examples": [
-                      {
-                        "email": "peter@gmail.com",
-                        "password": "peter111"
-                      }
-                    ]
+                    "example": {
+                      "email": "Johnpeter@gmail.com",
+                      "password": "johnpeter"
+                    }
                   }
-                ],
-                "contentMediaType": "application/json"
+                ]
               },
               "example": {
-                "email": "peter@gmail.com",
-                "password": "peter111"
+                "email": "Johnpeter@gmail.com",
+                "password": "johnpeter"
               }
             }
           },
@@ -238,8 +223,7 @@
         },
         "deprecated": false,
         "security": []
-      },
-      "parameters": []
+      }
     }
   },
   "components": {
@@ -256,12 +240,10 @@
             "type": "string"
           }
         },
-        "examples": [
-          {
-            "company": "micrphone",
-            "position": "for rap"
-          }
-        ]
+        "example": {
+          "company": "micrphone",
+          "position": "for rap"
+        }
       },
       "RegisterRequest": {
         "title": "RegisterRequest",
@@ -272,11 +254,9 @@
             "type": "string"
           }
         },
-        "examples": [
-          {
-            "name": "solo"
-          }
-        ]
+        "example": {
+          "name": "solo"
+        }
       },
       "LoginuserRequest": {
         "title": "LoginuserRequest",
@@ -290,12 +270,10 @@
             "type": "string"
           }
         },
-        "examples": [
-          {
-            "email": "peter@gmail.com",
-            "password": "peter111"
-          }
-        ]
+        "example": {
+          "email": "peter@gmail.com",
+          "password": "peter111"
+        }
       },
       "CreatejobRequest": {
         "title": "CreatejobRequest",
@@ -309,12 +287,10 @@
             "type": "string"
           }
         },
-        "examples": [
-          {
-            "company": "capo",
-            "position": "backend"
-          }
-        ]
+        "example": {
+          "company": "capo",
+          "position": "backend"
+        }
       }
     },
     "securitySchemes": {
@@ -326,6 +302,14 @@
   },
   "security": [],
   "tags": [
+    {
+      "name": "Misc",
+      "description": ""
+    },
+    {
+      "name": "Jobs",
+      "description": ""
+    },
     {
       "name": "Auth",
       "description": ""
