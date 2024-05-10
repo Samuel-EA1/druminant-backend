@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const { StatusCodes } = require("http-status-codes");
 
+var mongoose = require("mongoose");
+
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
@@ -18,8 +20,15 @@ const authMiddleware = async (req, res, next) => {
   try {
     const payLoad = jwt.verify(token, process.env.JWT_SECRET);
 
-    req.user = { name: payLoad.name, id: payLoad.id };
+    const userId = mongoose.Types.ObjectId(payLoad.id);
+
+    req.user = {
+      name: payLoad.username,
+      id: userId,
+      isAdmin: payLoad.isAdmin,
+    };
   } catch (error) {
+    console.log(error);
     return res
       .status(StatusCodes.UNAUTHORIZED)
       .json({ message: "Invalid token" });

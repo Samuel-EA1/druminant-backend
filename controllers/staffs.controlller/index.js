@@ -1,10 +1,10 @@
 const jobModel = require("../models/Job");
 const { StatusCodes } = require("http-status-codes");
 
-const BadRequestError = require("../errors/bad-request");
+const BadRequestError = require("../../errors/bad-request");
 const { Mongoose, isValidObjectId } = require("mongoose");
-const notFound = require("../middleware/not-found");
-const { NotFoundError } = require("../errors");
+const notFound = require("../../middleware/not-found");
+const { NotFoundError } = require("../../errors");
 
 // create job
 const createJob = async (req, res) => {
@@ -21,7 +21,7 @@ const createJob = async (req, res) => {
 };
 
 // get all jobs
-const getAllJobs = async (req, res) => {
+const getAllFarmers = async (req, res) => {
   const allJobs = await jobModel.find({ createdBy: req.user.id });
   res.status(StatusCodes.OK).json({ jobs: allJobs, mbHits: allJobs.length });
 };
@@ -100,7 +100,7 @@ const deleteJob = async (req, res) => {
 
 module.exports = {
   createJob,
-  getAllJobs,
+  getAllFarmers,
   getJob,
   updateJob,
   deleteJob,

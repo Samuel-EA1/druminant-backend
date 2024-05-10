@@ -24,8 +24,11 @@ app.use(limiter);
 const connectDb = require("./db/connect");
 
 // routes
-const authRoutes = require("./routes/auth");
-const jobsRoutes = require("./routes/jobs");
+
+const adminRoutes = require("./routes/admin.routes/index");
+const staffRoutes = require("./routes/staff.routes/index");
+const farmLandRoutes = require("./routes/farmLand.routes/index");
+const loginRoute = require("./routes/login")
 
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
@@ -37,8 +40,10 @@ app.use(express.json());
 // extra packages
 
 // routes
-app.use("/api/v1/jobs", authMiddleware, jobsRoutes);
-app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/auth/login", loginRoute);
+app.use("/api/v1/auth/admin", adminRoutes);
+app.use("/api/v1/auth/staff", staffRoutes);
+app.use("/api/v1/farmland", authMiddleware, farmLandRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get("/", (req, res) => {
