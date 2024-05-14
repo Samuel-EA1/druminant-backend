@@ -14,7 +14,9 @@ const register = async (req, res) => {
   if (farmland === "") {
     throw new Error("Please provide a farmland");
   } else if (!farmlandInDb) {
-    return res.status(StatusCodes.BAD_REQUEST).json({ Message: "Farmland not found" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ Message: "Farmland not found" });
   } else if (username.toString().trim() === "") {
     throw new Error("please provide a username");
   } else if (usernameInDb) {
@@ -26,16 +28,15 @@ const register = async (req, res) => {
     const user = await staffModel.create({ username, email, password });
 
     // push user_id to farmland array
-    await farmlandInDb.staffs.push(user._id);
+    await farmlandInDb.requests.push(user.username);
     await farmlandInDb.save();
 
     // save farmland to staff profile
     const staffData = await staffModel.findOne({ _id: user._id });
 
-    staffData.staffAt = farmlandInDb.farmland;
-    await staffData.save();
+    // staffData.staffAt = farmlandInDb.farmland;
+    // await staffData.save();
 
-    console.log(farmlandInDb.farmland);
     // create token
 
     const token = staffData.createJwt();

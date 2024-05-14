@@ -1,6 +1,66 @@
 const farmLandModel = require("../../models/farmland.model");
 const { StatusCodes } = require("http-status-codes");
 const mongoose = require("mongoose");
+const farmlandModel = require("../../models/farmland.model");
+const staffModel = require("../../models/staff.model");
+
+const processFarmlandRequest = async (req, res) => {
+  const { farmlandId, staffId } = req.params;
+  const { status } = req.body;
+  const { isAdmin } = req.user;
+
+  try {
+    if (!isAdmin) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json("Only Admins are allowed to process this request");
+    }
+
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res.status(StatusCodes.NOT_FOUND).json("Farmland not found");
+    }
+
+    const isStaffRequested = farmlandInDb.requests.includes(staffId);
+    const isStaffAccepted = farmlandInDb.staffs.includes(staffId);
+
+    // Fetch staff
+    const staff = await staffModel.findOne({ username: staffId });
+
+    // Update staff status
+    staff.status = status;
+    await staff.save();
+
+    // Update farmland request and staff array
+    farmlandInDb.requests = farmlandInDb.requests.filter(
+      (reqId) => reqId !== staffId
+    );
+
+    if (status === "Accepted" && isStaffRequested) {
+      farmlandInDb.staffs.push(staffId);
+    } else if (status === "Rejected" && isStaffAccepted) {
+      farmlandInDb.staffs = farmlandInDb.staffs.filter(
+        (staff) => staff !== staffId
+      );
+    } else {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json("Provided status not reorganized");
+    }
+
+    await farmlandInDb.save();
+
+    return res
+      .status(StatusCodes.CREATED)
+      .json({ staffs: farmlandInDb.staffs, requests: farmlandInDb.requests });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "An error occurred" });
+  }
+};
 
 const createFarmland = async (req, res) => {
   const adminId = req.user.id;
@@ -71,4 +131,5 @@ const deleteFarmland = async (req, res) => {
 module.exports = {
   createFarmland,
   farmLandDetails,
+  processFarmlandRequest,
 };

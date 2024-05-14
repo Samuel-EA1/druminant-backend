@@ -24,7 +24,6 @@ const login = async (req, res) => {
   }
 
   // If user is found, validate the password
-  console.log(user);
 
   const isValidPassword = await user.comparePassword(password);
 

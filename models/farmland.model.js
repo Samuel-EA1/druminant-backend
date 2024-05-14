@@ -1,6 +1,6 @@
 // models/Farmland.js
 const mongoose = require("mongoose");
-const farmWorker = require("./staff.model");
+
 const farmlandSchema = new mongoose.Schema({
   farmland: {
     type: String,
@@ -13,9 +13,15 @@ const farmlandSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "adminModel",
   },
+  requests: [
+    {
+      type: String,
+      ref: "Staffs",
+    },
+  ],
   staffs: [
     {
-      type: mongoose.Schema.Types.ObjectId,
+      type: String,
       ref: "Staffs",
     },
   ],

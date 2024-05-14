@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { BadRequestError, UnauthenticatedError } = require("../errors");
 const { StatusCodes } = require("http-status-codes");
-
 var mongoose = require("mongoose");
 
 const authMiddleware = async (req, res, next) => {
@@ -23,9 +22,9 @@ const authMiddleware = async (req, res, next) => {
     const userId = mongoose.Types.ObjectId(payLoad.id);
 
     req.user = {
-      name: payLoad.username,
-      id: userId,
       isAdmin: payLoad.isAdmin,
+      id: userId,
+      username: payLoad.username,
     };
   } catch (error) {
     console.log(error);
