@@ -24,36 +24,68 @@ const processFarmlandRequest = async (req, res) => {
 
     const isStaffRequested = farmlandInDb.requests.includes(staffId);
     const isStaffAccepted = farmlandInDb.staffs.includes(staffId);
+    const isStaffRejected = farmlandInDb.rejected.includes(staffId);
 
     // Fetch staff
     const staff = await staffModel.findOne({ username: staffId });
 
-    // Update staff status
-    staff.status = status;
-    await staff.save();
-
-    // Update farmland request and staff array
-    farmlandInDb.requests = farmlandInDb.requests.filter(
-      (reqId) => reqId !== staffId
-    );
-
-    if (status === "Accepted" && isStaffRequested) {
-      farmlandInDb.staffs.push(staffId);
-    } else if (status === "Rejected" && isStaffAccepted) {
-      farmlandInDb.staffs = farmlandInDb.staffs.filter(
-        (staff) => staff !== staffId
-      );
-    } else {
+    if (!staff) {
       return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json("Provided status not reorganized");
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Staff not found" });
     }
 
+    // Update staff status and handle validation
+    try {
+      staff.status = status;
+    } catch (validationError) {
+      if (validationError.errors && validationError.errors["status"]) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: validationError.errors["status"].message });
+      }
+      throw validationError; // rethrow if it's an unexpected error
+    }
+
+    // Update farmland request and staff array
+    if (!["Accept", "Reject"].includes(status)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json("Provided status not recorganized");
+    }
+
+    if (status === "Accept" && (isStaffRequested || isStaffRejected)) {
+      farmlandInDb.requests = farmlandInDb.requests.filter(
+        (reqId) => reqId !== staffId
+      );
+
+      farmlandInDb.rejected = farmlandInDb.rejected.filter(
+        (reqId) => reqId !== staffId
+      );
+      farmlandInDb.staffs.push(staffId);
+    } else if (status === "Reject" && (isStaffAccepted || isStaffRequested)) {
+      farmlandInDb.staffs = farmlandInDb.staffs.filter(
+        (reqId) => reqId !== staffId
+      );
+      farmlandInDb.requests = farmlandInDb.requests.filter(
+        (reqId) => reqId !== staffId
+      );
+
+      farmlandInDb.rejected.push(staffId);
+    } else if (
+      (status === "Reject" || status === "Accept") &&
+      (isStaffAccepted || isStaffRejected)
+    ) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(`Staff is already ${status}ed`);
+    }
+    await staff.save();
     await farmlandInDb.save();
 
-    return res
-      .status(StatusCodes.CREATED)
-      .json({ staffs: farmlandInDb.staffs, requests: farmlandInDb.requests });
+    return res.status(StatusCodes.CREATED).json({
+      message: ` Staff successfully ${status}ed`,
+    });
   } catch (error) {
     console.error(error);
     return res
@@ -62,28 +94,27 @@ const processFarmlandRequest = async (req, res) => {
   }
 };
 
-const createFarmland = async (req, res) => {
-  const adminId = req.user.id;
-  const { name } = req.body;
-
-  if (!req.user.isAdmin) {
-    return res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json({ Error: "Only admins can create a farmland" });
-  }
+// livestock
+const createLiveStock = async (req, res) => {
+  const { tagId, eventType, eventDate } = req.body;
+  const { farmlandId } = req.params;
 
   try {
-    const farmlandInDb = await farmLandModel.findOne({ name });
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
 
-    if (farmlandInDb)
+    // check for farmalnd
+    if (!farmlandInDb) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ Error: "Farmland name not available" });
+        .json({ message: "Farmland not available" });
+    }
 
-    const farmlandData = { ...req.body, admin: adminId };
+    
 
-    const farmLand = await farmLandModel.create(farmlandData);
-    res.status(StatusCodes.CREATED).json({ farmLand });
+     return res
+       .status(StatusCodes.BAD_REQUEST)
+       .json({ message: "Livestock created successfully" });
+    //
   } catch (error) {
     console.error("Error creating farmland:", error);
     res
@@ -129,7 +160,7 @@ const deleteFarmland = async (req, res) => {
 };
 
 module.exports = {
-  createFarmland,
+  createLiveStock,
   farmLandDetails,
   processFarmlandRequest,
 };

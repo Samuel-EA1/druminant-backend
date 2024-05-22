@@ -19,6 +19,12 @@ const farmlandSchema = new mongoose.Schema({
       ref: "Staffs",
     },
   ],
+  rejected: [
+    {
+      type: String,
+      ref: "Staffs",
+    },
+  ],
   staffs: [
     {
       type: String,

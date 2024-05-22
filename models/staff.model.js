@@ -9,7 +9,7 @@ const StaffSchema = new mongoose.Schema({
 
   status: {
     type: String,
-    enum: ["Pending", "Rejected", "Accepted"],
+    enum: ["Pending", "Reject", "Accept"],
     default: "Pending",
   },
 
@@ -58,9 +58,13 @@ StaffSchema.pre("save", async function (next) {
 });
 
 StaffSchema.methods.createJwt = function () {
-  return jwt.sign({isAdmin:this.isAdmin, id: this._id, username: this.username }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_LIFETIME,
-  });
+  return jwt.sign(
+    { isAdmin: this.isAdmin, id: this._id, username: this.username },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_LIFETIME,
+    }
+  );
 };
 
 // compare password
