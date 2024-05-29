@@ -228,8 +228,9 @@ const updateLivestock = async (req, res) => {
     }
 
     const userId = req.user.username;
+    const farmalndAdmin = farmlandInDb.admin;
     const isStaffOrAdmin =
-      farmlandInDb.admin === userId || farmlandInDb.staffs.includes(userId);
+      farmalndAdmin || farmlandInDb.staffs.includes(userId);
 
     // Check if admin or workers are allowed into the farmland
     if (!isStaffOrAdmin) {
@@ -250,7 +251,7 @@ const updateLivestock = async (req, res) => {
     }
 
     // Check for livestock ownership
-    if (fetchedLivestock.inCharge === userId || farmlandInDb.admin === userId) {
+    if (fetchedLivestock.inCharge === userId || farmalndAdmin === userId) {
       const updateFields = {};
 
       // Validate and set update fields
@@ -316,9 +317,72 @@ const updateLivestock = async (req, res) => {
   }
 };
 
+// delete livestock
+
+const deleteLivestock = async (req, res) => {
+  const { farmlandId, tagId } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ Error: "FarmLand not found" });
+    }
+
+    const userId = req.user.username;
+    const farmalndAdmin = farmlandInDb.admin;
+    const isStaffOrAdmin =
+      farmalndAdmin === userId || farmlandInDb.staffs.includes(userId);
+
+    // Check if admin or workers are allowed into the farmland
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // Fetch livestock
+    const fetchedLivestock = farmlandInDb.livestocks.find(
+      (entry) => entry.tagId === tagId
+    );
+
+    if (!fetchedLivestock) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Livestock not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (fetchedLivestock.inCharge === userId || farmalndAdmin === userId) {
+      const deleted = await farmlandModel.findOneAndUpdate(
+        {
+          "livestocks.tagId": tagId,
+        },
+        { $pull: { livestocks: { tagId: tagId } } },
+        { new: true }
+      );
+
+      console.log(deleted);
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "Livestock successfully deleted" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this livestock",
+      });
+    }
+  } catch (error) {
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
 module.exports = {
   createLiveStock,
   farmLandDetails,
   processFarmlandRequest,
   updateLivestock,
+  deleteLivestock,
 };
