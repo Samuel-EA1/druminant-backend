@@ -6,6 +6,7 @@ const {
   processFarmlandRequest,
   farmLandDetails,
   createLiveStock,
+  getLivestock,
   deleteLivestock,
 } = require("../../controllers/farmLand.controller");
 
@@ -16,7 +17,8 @@ router.get("/:farmlandId", farmLandDetails);
 router
   .post("/:farmlandId/livestock", createLiveStock)
   .patch("/:farmlandId/livestock/:tagId", updateLivestock)
-  .delete("/:farmlandId/livestock/:tagId", deleteLivestock);
+  .delete("/:farmlandId/livestock/:tagId", deleteLivestock)
+  .get("/:farmlandId/livestock/:tagId", getLivestock);
 
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
 

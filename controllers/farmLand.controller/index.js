@@ -375,6 +375,51 @@ const deleteLivestock = async (req, res) => {
       });
     }
   } catch (error) {
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: error });
+  }
+};
+
+// get livestock
+const getLivestock = async (req, res) => {
+  const { farmlandId, tagId } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ Error: "FarmLand not found" });
+    }
+
+    const userId = req.user.username;
+    const farmalndAdmin = farmlandInDb.admin;
+    const isStaffOrAdmin =
+      farmalndAdmin === userId || farmlandInDb.staffs.includes(userId);
+
+    // Check if admin or workers are allowed into the farmland
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // Fetch livestock
+    const fetchedLivestock = farmlandInDb.livestocks.find(
+      (entry) => entry.tagId === tagId
+    );
+
+    if (!fetchedLivestock) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Livestock not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({ message: fetchedLivestock });
+  } catch (error) {
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
   }
 };
@@ -385,4 +430,5 @@ module.exports = {
   processFarmlandRequest,
   updateLivestock,
   deleteLivestock,
+  getLivestock,
 };
