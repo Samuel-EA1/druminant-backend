@@ -8,9 +8,9 @@ const farmlandSchema = new mongoose.Schema({
     unique: true,
     required: [true, "Enter a valid farmland name"],
   },
-  // location: String,
+
   admin: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: String,
     ref: "adminModel",
   },
   requests: [
@@ -29,6 +29,47 @@ const farmlandSchema = new mongoose.Schema({
     {
       type: String,
       ref: "Staffs",
+    },
+  ],
+
+  livestocks: [
+    {
+      inCharge: {
+        type: String,
+      },
+      breed: {
+        type: String,
+      },
+      birthdate: {
+        type: Date,
+      },
+      sex: {
+        type: String,
+        enum: ["Male", "Female"],
+      },
+      tagId: {
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+      },
+      tagLocation: {
+        type: String,
+      },
+      weight: {
+        type: Number,
+      },
+      status: {
+        type: String,
+        enum: ["Healthy", "Sick", "Deceased"],
+      },
+      originStatus: {
+        type: String,
+        enum: ["Purchased", "Born on Farm"],
+      },
+      remark: {
+        type: String,
+      },
     },
   ],
 });

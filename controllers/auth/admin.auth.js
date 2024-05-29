@@ -53,7 +53,7 @@ const register = async (req, res) => {
         });
 
         // save farmland admin
-        adminFarmland.admin = mongoose.Types.ObjectId(user._id);
+        adminFarmland.admin = user.username;
         await adminFarmland.save();
 
         // save farmlandName to admin profile

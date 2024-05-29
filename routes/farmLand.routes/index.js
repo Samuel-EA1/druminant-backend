@@ -2,16 +2,19 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  createFarmland,
+  updateLivestock,
   processFarmlandRequest,
   farmLandDetails,
   createLiveStock,
 } = require("../../controllers/farmLand.controller");
 
-// router.post("/create", createFarmland).get("/:name", farmLandDetails);
+// get a farmland
+router.get("/:farmlandId", farmLandDetails);
 
 // livestock routes
-router.post("/:farmlandId/livestock", createLiveStock);
+router
+  .post("/:farmlandId/livestock", createLiveStock)
+  .patch("/:farmlandId/livestock/:tagId",updateLivestock);
 
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
 
