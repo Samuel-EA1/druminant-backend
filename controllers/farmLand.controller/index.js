@@ -15,7 +15,7 @@ const processFarmlandRequest = async (req, res) => {
     if (!isAdmin) {
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .json("Only Admins are allowed to process this request");
+        .json("Only the farmland admin is allowed to process this request");
     }
 
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
@@ -23,10 +23,6 @@ const processFarmlandRequest = async (req, res) => {
     if (!farmlandInDb) {
       return res.status(StatusCodes.NOT_FOUND).json("Farmland not found");
     }
-
-    const isStaffRequested = farmlandInDb.requests.includes(staffId);
-    const isStaffAccepted = farmlandInDb.staffs.includes(staffId);
-    const isStaffRejected = farmlandInDb.rejected.includes(staffId);
 
     // Fetch staff
     const staff = await staffModel.findOne({ username: staffId });
@@ -36,6 +32,10 @@ const processFarmlandRequest = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ message: "Staff not found" });
     }
+
+    const isStaffRequested = farmlandInDb.requests.includes(staff._id);
+    const isStaffAccepted = farmlandInDb.staffs.includes(staff._id);
+    const isStaffRejected = farmlandInDb.rejected.includes(staff._id);
 
     // Update staff status and handle validation
     try {
@@ -58,22 +58,23 @@ const processFarmlandRequest = async (req, res) => {
 
     if (status === "Accept" && (isStaffRequested || isStaffRejected)) {
       farmlandInDb.requests = farmlandInDb.requests.filter(
-        (reqId) => reqId !== staffId
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
       );
 
       farmlandInDb.rejected = farmlandInDb.rejected.filter(
-        (reqId) => reqId !== staffId
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
       );
-      farmlandInDb.staffs.push(staffId);
+      !farmlandInDb.staffs.includes(staff._id) &&
+        farmlandInDb.staffs.push(staff._id);
     } else if (status === "Reject" && (isStaffAccepted || isStaffRequested)) {
       farmlandInDb.staffs = farmlandInDb.staffs.filter(
-        (reqId) => reqId !== staffId
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
       );
       farmlandInDb.requests = farmlandInDb.requests.filter(
-        (reqId) => reqId !== staffId
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
       );
-
-      farmlandInDb.rejected.push(staffId);
+      !farmlandInDb.rejected.includes(staff._id) &&
+        farmlandInDb.rejected.push(staff._id);
     } else if (
       (status === "Reject" || status === "Accept") &&
       (isStaffAccepted || isStaffRejected)
@@ -110,7 +111,6 @@ const createLiveStock = async (req, res) => {
     remark,
   } = req.body;
   const { farmlandId } = req.params;
-  const { username } = req.user;
 
   try {
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -124,9 +124,13 @@ const createLiveStock = async (req, res) => {
 
     // check if user is a admin or staff in the farmland
 
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
     const isStaffOrAdmin =
-      (await farmlandInDb.staffs.includes(username)) ||
-      username === farmlandInDb.admin;
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
 
     if (isStaffOrAdmin) {
       // check for tagId uniquness
@@ -135,14 +139,19 @@ const createLiveStock = async (req, res) => {
       );
 
       if (tagIdExist) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
+        return res.status(StatusCodes.CONFLICT).json({
           message: "The tagId provided is already taken",
         });
       }
+
+      const { username } = requester.isAdmin
+        ? await adminModel.findOne({ _id: requester.id })
+        : await staffModel.findOne({ _id: requester.id });
+
       const livestockData = {
         inCharge: username,
         breed,
-        birthdate: new Date(),
+        birthdate: new Date(birthdate),
         sex,
         tagId,
         tagLocation,
@@ -161,7 +170,7 @@ const createLiveStock = async (req, res) => {
         .json({ message: "Livestock created successfully" });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or staffs can create a livestock.",
+        message: "Only farmLand Admin or Staffs can create a livestock.",
       });
     }
 
@@ -185,15 +194,19 @@ const farmLandDetails = async (req, res) => {
       res.status(StatusCodes.NOT_FOUND).json({ Error: "FarmLand not found" });
     }
 
-    const userId = req.user.username;
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
     const isStaffOrAdmin =
-      farmlandInDb.admin === userId || farmlandInDb.staffs.includes(userId);
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
 
     // checking if admin or workers is allowed into the farmland
     if (!isStaffOrAdmin)
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .json({ Error: "You don not have permision to access this farmland" });
+        .json({ Error: "You do not have permision to access this farmland" });
 
     res.status(StatusCodes.OK).json(farmlandInDb);
   } catch (error) {
@@ -227,12 +240,13 @@ const updateLivestock = async (req, res) => {
         .json({ Error: "FarmLand not found" });
     }
 
-    const userId = req.user.username;
+    const requester = req.user;
     const farmalndAdmin = farmlandInDb.admin;
-    const isStaffOrAdmin =
-      farmalndAdmin || farmlandInDb.staffs.includes(userId);
 
     // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
     if (!isStaffOrAdmin) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "You do not have permission to access this farmland",
@@ -245,13 +259,16 @@ const updateLivestock = async (req, res) => {
     );
 
     if (!fetchedLivestock) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         message: "Livestock not found",
       });
     }
 
     // Check for livestock ownership
-    if (fetchedLivestock.inCharge === userId || farmalndAdmin === userId) {
+    if (
+      fetchedLivestock.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
       const updateFields = {};
 
       // Validate and set update fields
@@ -275,8 +292,6 @@ const updateLivestock = async (req, res) => {
       }
 
       if (breed !== undefined) updateFields["livestocks.$.breed"] = breed;
-      if (inCharge !== undefined)
-        updateFields["livestocks.$.inCharge"] = inCharge;
       if (birthdate !== undefined)
         updateFields["livestocks.$.birthdate"] = birthdate;
       if (sex !== undefined) updateFields["livestocks.$.sex"] = sex;
@@ -296,7 +311,7 @@ const updateLivestock = async (req, res) => {
 
       if (!updatedFarmland) {
         return res
-          .status(StatusCodes.NOT_FOUND)
+          .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Update failed" });
       }
 
@@ -332,10 +347,13 @@ const deleteLivestock = async (req, res) => {
         .json({ Error: "FarmLand not found" });
     }
 
-    const userId = req.user.username;
+    const requester = req.user;
     const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
     const isStaffOrAdmin =
-      farmalndAdmin === userId || farmlandInDb.staffs.includes(userId);
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
 
     // Check if admin or workers are allowed into the farmland
     if (!isStaffOrAdmin) {
@@ -350,13 +368,16 @@ const deleteLivestock = async (req, res) => {
     );
 
     if (!fetchedLivestock) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         message: "Livestock not found",
       });
     }
 
     // Check for livestock ownership
-    if (fetchedLivestock.inCharge === userId || farmalndAdmin === userId) {
+    if (
+      fetchedLivestock.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
       const deleted = await farmlandModel.findOneAndUpdate(
         {
           "livestocks.tagId": tagId,
@@ -365,7 +386,6 @@ const deleteLivestock = async (req, res) => {
         { new: true }
       );
 
-      console.log(deleted);
       return res
         .status(StatusCodes.OK)
         .json({ message: "Livestock successfully deleted" });
@@ -395,10 +415,13 @@ const getLivestock = async (req, res) => {
         .json({ Error: "FarmLand not found" });
     }
 
-    const userId = req.user.username;
+    const requester = req.user;
     const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
     const isStaffOrAdmin =
-      farmalndAdmin === userId || farmlandInDb.staffs.includes(userId);
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
 
     // Check if admin or workers are allowed into the farmland
     if (!isStaffOrAdmin) {
@@ -413,7 +436,7 @@ const getLivestock = async (req, res) => {
     );
 
     if (!fetchedLivestock) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
+      return res.status(StatusCodes.NOT_FOUND).json({
         message: "Livestock not found",
       });
     }

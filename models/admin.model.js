@@ -9,7 +9,6 @@ const AdminSchema = new mongoose.Schema({
   },
   adminAt: {
     type: String,
-    ref: "Farmlands",
     trim: true,
     unique: true,
   },
@@ -53,15 +52,7 @@ AdminSchema.pre("save", async function (next) {
 });
 
 
-// StaffSchema.methods.createJwt = function () {
-//   return jwt.sign(
-//     { isAdmin: this.isAdmin, id: this._id, username: this.username },
-//     process.env.JWT_SECRET,
-//     {
-//       expiresIn: process.env.JWT_LIFETIME,
-//     }
-//   );
-// };
+ 
 
 // Create JWT token for Admin
 AdminSchema.methods.createJwt = function () {

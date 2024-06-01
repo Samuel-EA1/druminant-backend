@@ -28,7 +28,7 @@ const register = async (req, res) => {
     const user = await staffModel.create({ username, email, password });
 
     // push user_id to farmland array
-    await farmlandInDb.requests.push(user.username);
+    await farmlandInDb.requests.push(user._id);
     await farmlandInDb.save();
 
     // save farmland to staff profile

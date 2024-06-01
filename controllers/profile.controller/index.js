@@ -8,7 +8,7 @@ const mongoose = require("mongoose");
 // edit admin/staff profile
 const editProfile = async (req, res) => {
   const { userId } = req.params;
-  const { email, username } = req.body;
+  const { email, username, password } = req.body;
   const requesterId = req.user.id;
 
   try {
@@ -62,8 +62,9 @@ const editProfile = async (req, res) => {
 
     // Update data
     const updateData = {};
-    if (username) updateData["username"] = username;
-    if (email) updateData["email"] = email;
+    if (username !== undefined) updateData["username"] = username;
+    if (email !== undefined) updateData["email"] = email;
+    if (password !== undefined) updateData["password"] = password
 
     let updatedProfile;
     if (isAdmin) {
@@ -87,4 +88,47 @@ const editProfile = async (req, res) => {
   }
 };
 
-module.exports = editProfile;
+//  edit admin/staff profile
+const getProfile = async (req, res) => {
+  const { userId } = req.params;
+  const requester = req.user;
+
+  try {
+    let user;
+    let isAdmin = false;
+
+    // Check if the user is a farm worker or admin
+    user = await staffModel.findOne({ username: userId });
+    if (!user) {
+      user = await adminModel.findOne({ username: userId });
+      if (!user) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "User not found" });
+      }
+      isAdmin = true;
+    }
+
+    // check if caller is allowed to make the request
+    if (!mongoose.Types.ObjectId(requester.id).equals(user._id)) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Please login into your account to proceed" });
+    }
+
+    res.status(StatusCodes.OK).json({
+      message: {
+        _id: user._id,
+        isAdmin: user.isAdmin,
+        username: user.username,
+        email: user.email,
+        status: user.status,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+module.exports = { getProfile, editProfile };

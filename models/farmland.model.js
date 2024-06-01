@@ -10,24 +10,24 @@ const farmlandSchema = new mongoose.Schema({
   },
 
   admin: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "adminModel",
   },
   requests: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Staffs",
     },
   ],
   rejected: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Staffs",
     },
   ],
   staffs: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Staffs",
     },
   ],

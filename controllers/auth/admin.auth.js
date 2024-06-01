@@ -53,7 +53,7 @@ const register = async (req, res) => {
         });
 
         // save farmland admin
-        adminFarmland.admin = user.username;
+        adminFarmland.admin = user._id;
         await adminFarmland.save();
 
         // save farmlandName to admin profile
