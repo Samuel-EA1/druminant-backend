@@ -39,7 +39,7 @@ const login = async (req, res) => {
 
     res.status(StatusCodes.OK).json({ isAdmin, username: name, token });
   } catch (error) {
-    return res.status(StatusCodes.UNAUTHORIZED).json(error);
+    throw new UnauthenticatedError("Invalid credentials");
   }
 };
 

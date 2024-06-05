@@ -21,14 +21,16 @@ const StaffSchema = new mongoose.Schema({
   username: {
     type: String,
     required: [true, "Please enter a username"],
-    maxlength: 15,
-    minlength: 3,
+    maxlength: [15, "Max username length is 15"],
+    minlength: [3, "Min username length is 3"],
     unique: true,
+    trim: true,
   },
   password: {
     type: String,
     required: [true, "Please enter a password"],
-    minlength: 6,
+    minlength: [6, "Min password length is 6"],
+    trim: true,
   },
 
   email: {

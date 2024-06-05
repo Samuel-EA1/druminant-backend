@@ -64,8 +64,12 @@ const processFarmlandRequest = async (req, res) => {
       farmlandInDb.rejected = farmlandInDb.rejected.filter(
         (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
       );
+      // push staff id to the staffs array
       !farmlandInDb.staffs.includes(staff._id) &&
         farmlandInDb.staffs.push(staff._id);
+
+      //  update staff farmalnd in profile
+      staff.staffAt = farmlandId;
     } else if (status === "Reject" && (isStaffAccepted || isStaffRequested)) {
       farmlandInDb.staffs = farmlandInDb.staffs.filter(
         (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
@@ -75,6 +79,8 @@ const processFarmlandRequest = async (req, res) => {
       );
       !farmlandInDb.rejected.includes(staff._id) &&
         farmlandInDb.rejected.push(staff._id);
+
+      staff.staffAt = "";
     } else if (
       (status === "Reject" || status === "Accept") &&
       (isStaffAccepted || isStaffRejected)

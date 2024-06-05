@@ -5,21 +5,29 @@ const { BadRequestError, UnauthenticatedError } = require("../../errors");
 const staffModel = require("../../models/staff.model");
 const farmlandModel = require("../../models/farmland.model");
 const mongoose = require("mongoose");
+const Joi = require("joi");
+
+// Define Joi schema for registration
+const registerSchema = Joi.object({
+  username: Joi.string().min(3).max(15).required().trim(),
+  email: Joi.string().email().required().trim().lowercase(),
+  password: Joi.string().min(6).required().trim(),
+  farmland: Joi.string().required().trim(),
+});
 
 const register = async (req, res) => {
   const { username, farmland, email, password } = req.body;
 
   // check if none of the req body is empty.
-  if (
-    !username.toString().trim() ||
-    !farmland ||
-    !email.toString().trim() ||
-    !password.toString().trim()
-  ) {
-    res.status(StatusCodes.BAD_REQUEST).json({
-      Error: "Please provide a username, email, password, and farmland",
+  //  validate request body using
+  const { error, value } = registerSchema.validate(req.body);
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      Error: error.details[0].message,
     });
   }
+
+  console.log(value)
 
   // check if any of the req body is available or not
   const usernameInAdminCollection = await adminModel.findOne({ username });
@@ -31,11 +39,17 @@ const register = async (req, res) => {
   });
 
   if (usernameInAdminCollection || usernameInStaffCollection) {
-    throw new Error("Username is already taken");
+    return res
+      .status(StatusCodes.CONFLICT)
+      .json({ message: "Username is already taken" });
   } else if (emailInAdminCollection || emailInStaffCollection) {
-    throw new Error("Email is already taken");
+    return res
+      .status(StatusCodes.CONFLICT)
+      .json({ message: "Email is already taken" });
   } else if (farmlandInFarmCollection) {
-    throw new Error("Farmland name is already taken");
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ message: "Farmland name is already taken" });
   }
 
   try {

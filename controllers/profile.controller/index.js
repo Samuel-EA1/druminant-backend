@@ -64,7 +64,7 @@ const editProfile = async (req, res) => {
     const updateData = {};
     if (username !== undefined) updateData["username"] = username;
     if (email !== undefined) updateData["email"] = email;
-    if (password !== undefined) updateData["password"] = password
+    if (password !== undefined) updateData["password"] = password;
 
     let updatedProfile;
     if (isAdmin) {
@@ -122,6 +122,7 @@ const getProfile = async (req, res) => {
         isAdmin: user.isAdmin,
         username: user.username,
         email: user.email,
+        staffAt: user.staffAt,
         status: user.status,
       },
     });

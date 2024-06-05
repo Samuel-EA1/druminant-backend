@@ -3,27 +3,51 @@ const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 const { BadRequestError, UnauthenticatedError } = require("../../errors");
 const staffModel = require("../../models/staff.model");
+const Joi = require("joi");
+const adminModel = require("../../models/admin.model");
+
+// Define Joi schema for registration
+const registerSchema = Joi.object({
+  username: Joi.string().min(3).max(15).required().trim(),
+  email: Joi.string().email().required().trim().lowercase(),
+  password: Joi.string().min(6).required().trim(),
+  farmland: Joi.string().required().trim(),
+});
+
 
 const register = async (req, res) => {
   const { farmland, username, email, password } = req.body;
 
-  const farmlandInDb = await farmLandModel.findOne({ farmland });
-
-  const usernameInDb = await staffModel.findOne({ username });
-
-  if (farmland === "") {
-    throw new Error("Please provide a farmland");
-  } else if (!farmlandInDb) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ Message: "Farmland not found" });
-  } else if (username.toString().trim() === "") {
-    throw new Error("please provide a username");
-  } else if (usernameInDb) {
-    throw new Error("Username is not available");
+  //  validate request body using
+  const { error, value } = registerSchema.validate(req.body);
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      Error: error.details[0].message,
+    });
   }
 
+  const farmlandInDb = await farmLandModel.findOne({ farmland });
+  const usernameInDb = await staffModel.findOne({ username });
+
   try {
+    const usernameInAdminCollection = await adminModel.findOne({ username });
+    const emailInAdminCollection = await adminModel.findOne({ email });
+    const emailInStaffCollection = await staffModel.findOne({ email });
+
+    if (usernameInAdminCollection || usernameInDb) {
+      return res
+        .status(StatusCodes.CONFLICT)
+        .json({ message: "Username is already taken" });
+    } else if (emailInAdminCollection || emailInStaffCollection) {
+      return res
+        .status(StatusCodes.CONFLICT)
+        .json({ message: "Email is already taken" });
+    } else if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Farmland not found" });
+    }
+
     // create staff
     const user = await staffModel.create({ username, email, password });
 
@@ -44,27 +68,24 @@ const register = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
       isAdmin: staffData.isAdmin,
       username: staffData.username,
-      staffAt: staffData.staffAt,
+
       token,
     });
   } catch (error) {
+    console.log(error);
     // delete staff from farmland
+    return res.status(StatusCodes.BAD_GATEWAY).json(error);
     const farmStaffs = farmlandInDb.staffs;
     console.log(farmStaffs, "farmstaffs");
     const staff = await staffModel.findOne({ username });
-    console.log(staff._id, "staffid\n");
     const updatedStaffs = farmStaffs.filter(
       (id) => id.toString() !== staff._id.toString()
     );
-
-    console.log(updatedStaffs, "updatefedstaffs\n");
     farmlandInDb.staffs = updatedStaffs;
     await farmlandInDb.save();
 
-    console.log(farmlandInDb.staffs, "real staffs");
     // delete staff from db
     await staffModel.findOneAndDelete({ username });
-    throw new Error(error);
   }
 };
 
