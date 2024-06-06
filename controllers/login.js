@@ -4,12 +4,22 @@ const { BadRequestError, UnauthenticatedError } = require("../errors");
 const { StatusCodes } = require("http-status-codes");
 const adminModel = require("../models/admin.model");
 const staffModel = require("../models/staff.model");
+const Joi = require("joi");
 
+const validateSchema = Joi.object({
+  username: Joi.string().min(3).max(15).required().trim(),
+  password: Joi.string().min(6).required().trim(),
+});
 const login = async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    throw new BadRequestError("Please provide username and password!");
-  }
+
+  const { error, value } = validateSchema.validate(req.body);
+
+  if (error)
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      Error: error.details[0].message,
+    });
+
   try {
     let user;
 

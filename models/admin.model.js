@@ -64,6 +64,8 @@ AdminSchema.methods.createJwt = function () {
 
 // Method to compare given password with the hashed password in the database
 AdminSchema.methods.comparePassword = async function (candidatePassword) {
+  console.log(candidatePassword, this.password);
+  console.log(await bcrypt.compare(candidatePassword, this.password));
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

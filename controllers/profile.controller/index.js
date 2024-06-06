@@ -4,12 +4,25 @@ const { BadRequestError, UnauthenticatedError } = require("../../errors");
 const staffModel = require("../../models/staff.model");
 const adminModel = require("../../models/admin.model");
 const mongoose = require("mongoose");
+const Joi = require("joi");
 
+const updateSchema = Joi.object({
+  username: Joi.string().min(3).max(15).required().trim(),
+  email: Joi.string().email().required().trim().lowercase(),
+  password: Joi.string().min(6).required().trim(),
+});
 // edit admin/staff profile
 const editProfile = async (req, res) => {
   const { userId } = req.params;
   const { email, username, password } = req.body;
   const requesterId = req.user.id;
+
+  const { error } = updateSchema.validate(req.body);
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      Error: error.details[0].message,
+    });
+  }
 
   try {
     let user;
@@ -66,22 +79,26 @@ const editProfile = async (req, res) => {
     if (email !== undefined) updateData["email"] = email;
     if (password !== undefined) updateData["password"] = password;
 
-    let updatedProfile;
-    if (isAdmin) {
-      updatedProfile = await adminModel.findOneAndUpdate(
-        { _id: user._id },
-        { $set: updateData },
-        { new: true }
-      );
-    } else {
-      updatedProfile = await staffModel.findOneAndUpdate(
-        { _id: user._id },
-        { $set: updateData },
-        { new: true }
-      );
-    }
+    Object.assign(user, updateData);
+    await user.save();
 
-    res.status(StatusCodes.OK).json({ message: updatedProfile });
+    // if (isAdmin) {
+    //   updatedProfile = await adminModel.findOneAndUpdate(
+    //     { _id: user._id },
+    //     { $set: updateData },
+    //     { new: true }
+    //   );
+    // } else {
+    //   updatedProfile = await staffModel.findOneAndUpdate(
+    //     { _id: user._id },
+    //     { $set: updateData },
+    //     { new: true }
+    //   );
+    // }
+
+    res
+      .status(StatusCodes.OK)
+      .json({ message: "Profile successfully updated" });
   } catch (error) {
     console.log(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
