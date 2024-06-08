@@ -33,12 +33,12 @@ const LivestockSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Healthy", "Sick", "Deceased"],
+    enum: ["Healthy", "Sick", "Deceased", "Pregnant", "Injured"],
     required: true,
   },
   originStatus: {
     type: String,
-    enum: ["Purchased", "Born on Farm"],
+    enum: ["Purchased", "Born on Farm", "Donated", "Inherited", "Adopted"],
     required: true,
   },
   remark: {

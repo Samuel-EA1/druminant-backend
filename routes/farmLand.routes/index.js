@@ -8,6 +8,8 @@ const {
   createLiveStock,
   getLivestock,
   deleteLivestock,
+  getFarmlandStaffs,
+  getFarmlandrequests,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -20,6 +22,10 @@ router
   .delete("/:farmlandId/livestock/:tagId", deleteLivestock)
   .get("/:farmlandId/livestock/:tagId", getLivestock);
 
+// farmland requests
+
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
+router.get("/:farmlandId/requests/accepted", getFarmlandStaffs);
+router.get("/:farmlandId/requests/pending", getFarmlandrequests);
 
 module.exports = router;

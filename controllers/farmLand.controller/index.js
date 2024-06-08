@@ -6,6 +6,7 @@ const staffModel = require("../../models/staff.model");
 const livestockModel = require("../../models/livestock.model");
 const adminModel = require("../../models/admin.model");
 
+//  farmland requests
 const processFarmlandRequest = async (req, res) => {
   const { farmlandId, staffId } = req.params;
   const { status } = req.body;
@@ -94,6 +95,101 @@ const processFarmlandRequest = async (req, res) => {
 
     return res.status(StatusCodes.CREATED).json({
       message: ` Staff successfully ${status}ed`,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "An error occurred" });
+  }
+};
+
+// get staffs
+const getFarmlandStaffs = async (req, res) => {
+  const { farmlandId } = req.params;
+  const { isAdmin } = req.user;
+
+  try {
+    if (!isAdmin) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json("Only the farmland admin is allowed to process this request");
+    }
+
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res.status(StatusCodes.NOT_FOUND).json("Farmland not found");
+    }
+
+    // get staffs
+
+    const accepted = await farmlandInDb.staffs;
+
+    if (accepted.length < 1) {
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "No staffs working on this farmland" });
+    }
+
+    const staffRes = await Promise.all(
+      accepted.map(async (_id) => await staffModel.findOne({ _id }))
+    );
+
+    const staff = staffRes.map((staff) => ({
+      username: staff.username,
+      email: staff.email,
+    }));
+
+    return res.status(StatusCodes.OK).json({
+      message: staff,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "An error occurred" });
+  }
+};
+
+const getFarmlandrequests = async (req, res) => {
+  const { farmlandId } = req.params;
+  const { isAdmin } = req.user;
+
+  try {
+    if (!isAdmin) {
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json("Only the farmland admin is allowed to process this request");
+    }
+
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res.status(StatusCodes.NOT_FOUND).json("Farmland not found");
+    }
+
+    // get staffs
+
+    const accepted = await farmlandInDb.requests;
+
+    if (accepted.length < 1) {
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "No requests on this farmland" });
+    }
+
+    const pendingRes = await Promise.all(
+      accepted.map(async (_id) => await staffModel.findOne({ _id }))
+    );
+
+    const staff = pendingRes.map((req) => ({
+      username: req.username,
+      email: req.email,
+    }));
+
+    return res.status(StatusCodes.OK).json({
+      message: staff,
     });
   } catch (error) {
     console.error(error);
@@ -460,4 +556,6 @@ module.exports = {
   updateLivestock,
   deleteLivestock,
   getLivestock,
+  getFarmlandStaffs,
+  getFarmlandrequests
 };
