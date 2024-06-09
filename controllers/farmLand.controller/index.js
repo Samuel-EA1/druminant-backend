@@ -562,14 +562,6 @@ const quarantine = async (req, res) => {
   const { farmlandId, tagId } = req.params;
   const { action, quarantine_date, reason } = req.body;
 
-  const { error } = quarantineJoiSchema.validate({ quarantine_date, reason });
-
-  if (error) {
-    return res.status(StatusCodes.BAD_REQUEST).json({
-      Error: error.details[0].message,
-    });
-  }
-
   if (!["Quarantine", "Release"].includes(action)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
@@ -608,18 +600,32 @@ const quarantine = async (req, res) => {
       (entry) => entry.tagId === tagId
     );
 
+    //  check if the livestock is on the farmland
+    if (!isReleased && !isQuarantined) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Livestock not found on this farmland",
+      });
+    }
+
     if (
       (isReleased ? isReleased.inCharge : isQuarantined.inCharge) ===
         requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
-      if (!isReleased && !isQuarantined) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          message: "Livestock not found on this farmland",
-        });
-      }
-
       if (action === "Quarantine" && isReleased) {
+        // check for quarantine date  and reason
+
+        const { error } = quarantineJoiSchema.validate({
+          quarantine_date,
+          reason,
+        });
+
+        if (error) {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            Error: error.details[0].message,
+          });
+        }
+
         farmlandInDb.livestocks = farmlandInDb.livestocks.filter(
           (entry) => entry.tagId !== tagId
         );
