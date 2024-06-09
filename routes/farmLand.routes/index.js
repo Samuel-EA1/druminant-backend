@@ -10,6 +10,7 @@ const {
   deleteLivestock,
   getFarmlandStaffs,
   getFarmlandrequests,
+  quarantine,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -20,7 +21,8 @@ router
   .post("/:farmlandId/livestock", createLiveStock)
   .patch("/:farmlandId/livestock/:tagId", updateLivestock)
   .delete("/:farmlandId/livestock/:tagId", deleteLivestock)
-  .get("/:farmlandId/livestock/:tagId", getLivestock);
+  .get("/:farmlandId/livestock/:tagId", getLivestock)
+  .post("/:farmlandId/livestock/:tagId", quarantine);
 
 // farmland requests
 

@@ -5,6 +5,13 @@ const farmlandModel = require("../../models/farmland.model");
 const staffModel = require("../../models/staff.model");
 const livestockModel = require("../../models/livestock.model");
 const adminModel = require("../../models/admin.model");
+const quarantineModel = require("../../models/quarantine.model");
+const Joi = require("joi");
+
+const quarantineJoiSchema = Joi.object({
+  quarantine_date: Joi.date().required(),
+  reason: Joi.string().required(),
+});
 
 //  farmland requests
 const processFarmlandRequest = async (req, res) => {
@@ -14,15 +21,17 @@ const processFarmlandRequest = async (req, res) => {
 
   try {
     if (!isAdmin) {
-      return res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json("Only the farmland admin is allowed to process this request");
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only the farmland admin is allowed to process this request",
+      });
     }
 
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
 
     if (!farmlandInDb) {
-      return res.status(StatusCodes.NOT_FOUND).json("Farmland not found");
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Farmland not found" });
     }
 
     // Fetch staff
@@ -54,7 +63,7 @@ const processFarmlandRequest = async (req, res) => {
     if (!["Accept", "Reject"].includes(status)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json("Provided status not recorganized");
+        .json({ message: "Provided status is not recorganized" });
     }
 
     if (status === "Accept" && (isStaffRequested || isStaffRejected)) {
@@ -549,6 +558,138 @@ const getLivestock = async (req, res) => {
   }
 };
 
+const quarantine = async (req, res) => {
+  const { farmlandId, tagId } = req.params;
+  const { action, quarantine_date, reason } = req.body;
+
+  const { error } = quarantineJoiSchema.validate({ quarantine_date, reason });
+
+  if (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      Error: error.details[0].message,
+    });
+  }
+
+  if (!["Quarantine", "Release"].includes(action)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Provided action is not recorganized" });
+  }
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ Error: "FarmLand not found" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // Fetch livestock
+    const isReleased = farmlandInDb.livestocks.find(
+      (entry) => entry.tagId === tagId
+    );
+    const isQuarantined = farmlandInDb.quarantines.find(
+      (entry) => entry.tagId === tagId
+    );
+
+    if (
+      (isReleased ? isReleased.inCharge : isQuarantined.inCharge) ===
+        requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      if (!isReleased && !isQuarantined) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: "Livestock not found on this farmland",
+        });
+      }
+
+      if (action === "Quarantine" && isReleased) {
+        farmlandInDb.livestocks = farmlandInDb.livestocks.filter(
+          (entry) => entry.tagId !== tagId
+        );
+        // push livestock to quarantine array
+
+        const newQuarantine = {
+          inCharge: isReleased.inCharge,
+          quarantine_date: new Date(quarantine_date),
+          reason: reason,
+          breed: isReleased.breed,
+          birthdate: isReleased.birthdate,
+          sex: isReleased.sex,
+          tagId: isReleased.tagId,
+          tagLocation: isReleased.tagLocation,
+          originStatus: isReleased.originStatus,
+          weight: isReleased.weight,
+          status: isReleased.status,
+          remark: isReleased.remark,
+        };
+
+        farmlandInDb.quarantines.push(newQuarantine);
+      } else if (action === "Release" && isQuarantined) {
+        // remove from qurantine model then push to livestock model
+        farmlandInDb.quarantines = farmlandInDb.quarantines.filter(
+          (entry) => entry.tagId !== tagId
+        );
+
+        console.log("ready to realease");
+
+        // push livestock to quarantine model
+        const newLivestock = {
+          inCharge: isQuarantined.inCharge,
+          breed: isQuarantined.breed,
+          birthdate: isQuarantined.birthdate,
+          sex: isQuarantined.sex,
+          tagId: isQuarantined.tagId,
+          tagLocation: isQuarantined.tagLocation,
+          originStatus: isQuarantined.originStatus,
+          weight: isQuarantined.weight,
+          status: isQuarantined.status,
+          remark: isQuarantined.remark,
+        };
+
+        farmlandInDb.livestocks.push(newLivestock);
+      } else if (
+        (action === "Quarantine" || action === "Release") &&
+        (isQuarantined || isReleased)
+      ) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: `Livestock already ${action}d` });
+      }
+
+      await farmlandInDb.save();
+
+      // Respond to the client
+      res
+        .status(StatusCodes.CREATED)
+        .json({ message: `Livestock successfully ${action}d` });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this livestock",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
 module.exports = {
   createLiveStock,
   farmLandDetails,
@@ -557,5 +698,6 @@ module.exports = {
   deleteLivestock,
   getLivestock,
   getFarmlandStaffs,
-  getFarmlandrequests
+  getFarmlandrequests,
+  quarantine,
 };

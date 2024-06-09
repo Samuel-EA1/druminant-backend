@@ -23,6 +23,7 @@ const authMiddleware = async (req, res, next) => {
     req.user = {
       isAdmin: payLoad.isAdmin,
       id: userId,
+      username: payLoad.username
     };
   } catch (error) {
     console.log(error);
