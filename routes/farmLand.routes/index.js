@@ -5,12 +5,12 @@ const {
   updateLivestock,
   processFarmlandRequest,
   farmLandDetails,
-  createLiveStock,
   getLivestock,
   deleteLivestock,
   getFarmlandStaffs,
   getFarmlandrequests,
   quarantine,
+  createLivestock,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -18,14 +18,13 @@ router.get("/:farmlandId", farmLandDetails);
 
 // livestock routes
 router
-  .post("/:farmlandId/livestock", createLiveStock)
-  .patch("/:farmlandId/livestock/:tagId", updateLivestock)
-  .delete("/:farmlandId/livestock/:tagId", deleteLivestock)
-  .get("/:farmlandId/livestock/:tagId", getLivestock)
-  .post("/:farmlandId/livestock/:tagId", quarantine);
+  .post("/:farmlandId/livestock/:livestockType", createLivestock)
+  .patch("/:farmlandId/livestock/:livestockType/:livestockId", updateLivestock)
+  .delete("/:farmlandId/livestock/:livestockType/:livestockId", deleteLivestock)
+  .get("/:farmlandId/livestock/:livestockType/:livestockId", getLivestock)
+  .post("/:farmlandId/livestock/:livestockType/:livestockId", quarantine);
 
 // farmland requests
-
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
 router.get("/:farmlandId/requests/accepted", getFarmlandStaffs);
 router.get("/:farmlandId/requests/pending", getFarmlandrequests);

@@ -3,10 +3,16 @@ const { StatusCodes } = require("http-status-codes");
 const mongoose = require("mongoose");
 const farmlandModel = require("../../models/farmland.model");
 const staffModel = require("../../models/staff.model");
-const livestockModel = require("../../models/livestock.model");
+
 const adminModel = require("../../models/admin.model");
-const quarantineModel = require("../../models/quarantine.model");
+
 const Joi = require("joi");
+const joiLivestockSchema = require("./farmValidation/livestockValidation");
+
+const {
+  getQuarantinedModel,
+  getLivestockModel,
+} = require("../../models/DynamicLivestock");
 
 const quarantineJoiSchema = Joi.object({
   quarantine_date: Joi.date().required(),
@@ -209,7 +215,7 @@ const getFarmlandrequests = async (req, res) => {
 };
 
 // livestock
-const createLiveStock = async (req, res) => {
+const createLivestock = async (req, res) => {
   const {
     breed,
     birthdate,
@@ -221,9 +227,23 @@ const createLiveStock = async (req, res) => {
     status,
     remark,
   } = req.body;
-  const { farmlandId } = req.params;
+  const { farmlandId, livestockType } = req.params;
 
   try {
+    const { error } = joiLivestockSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
 
     // check for farmalnd
@@ -234,7 +254,6 @@ const createLiveStock = async (req, res) => {
     }
 
     // check if user is a admin or staff in the farmland
-
     const requester = req.user;
     const farmalndAdmin = farmlandInDb.admin;
 
@@ -244,22 +263,25 @@ const createLiveStock = async (req, res) => {
       farmlandInDb.staffs.includes(requester.id);
 
     if (isStaffOrAdmin) {
-      // check for tagId uniquness
-      const tagIdExist = await farmlandInDb.livestocks.some(
-        (e) => e.tagId === tagId
-      );
+      // Get the livestock model for this farmland
+      const Livestock = getLivestockModel(farmlandId, livestockType);
 
-      if (tagIdExist) {
-        return res.status(StatusCodes.CONFLICT).json({
-          message: "The tagId provided is already taken",
-        });
+      // Check for duplicate tagId within the same farmland collection
+      const existingLivestock = await Livestock.findOne({
+        tagId,
+      });
+      if (existingLivestock) {
+        return res
+          .status(400)
+          .json({ error: "Tag ID already exists for this farmland" });
       }
 
       const { username } = requester.isAdmin
         ? await adminModel.findOne({ _id: requester.id })
         : await staffModel.findOne({ _id: requester.id });
 
-      const livestockData = {
+      // new cattle
+      const newCattle = {
         inCharge: username,
         breed,
         birthdate: new Date(birthdate),
@@ -269,12 +291,11 @@ const createLiveStock = async (req, res) => {
         originStatus,
         weight,
         status,
-        remark: remark || "",
+        remark: remark,
       };
 
-      farmlandInDb.livestocks.push(livestockData);
-
-      await farmlandInDb.save();
+      const newLivestock = new Livestock(newCattle);
+      await newLivestock.save();
 
       return res
         .status(StatusCodes.CREATED)
@@ -328,12 +349,12 @@ const farmLandDetails = async (req, res) => {
 // update livestock data
 
 const updateLivestock = async (req, res) => {
-  const { farmlandId, tagId } = req.params;
+  const { farmlandId, livestockId, livestockType } = req.params;
   const {
     breed,
-    inCharge,
     birthdate,
     sex,
+    tagId,
     tagLocation,
     weight,
     status,
@@ -341,6 +362,7 @@ const updateLivestock = async (req, res) => {
     remark,
   } = req.body;
 
+  tagId;
   try {
     // Fetch farmland
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
@@ -349,6 +371,12 @@ const updateLivestock = async (req, res) => {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ Error: "FarmLand not found" });
+    }
+
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
     }
 
     const requester = req.user;
@@ -364,10 +392,10 @@ const updateLivestock = async (req, res) => {
       });
     }
 
+    const livestock = getLivestockModel(farmlandId, livestockType);
+
     // Fetch livestock
-    const fetchedLivestock = farmlandInDb.livestocks.find(
-      (entry) => entry.tagId === tagId
-    );
+    const fetchedLivestock = await livestock.findOne({ tagId: livestockId });
 
     if (!fetchedLivestock) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -402,60 +430,63 @@ const updateLivestock = async (req, res) => {
           .json({ message: "The originStatus provided is not a valid option" });
       }
 
-      if (breed !== undefined) updateFields["livestocks.$.breed"] = breed;
-      if (birthdate !== undefined)
-        updateFields["livestocks.$.birthdate"] = birthdate;
-      if (sex !== undefined) updateFields["livestocks.$.sex"] = sex;
-      if (tagLocation !== undefined)
-        updateFields["livestocks.$.tagLocation"] = tagLocation;
-      if (weight !== undefined) updateFields["livestocks.$.weight"] = weight;
-      if (status !== undefined) updateFields["livestocks.$.status"] = status;
+      if (breed !== undefined) updateFields["breed"] = breed;
+      if (birthdate !== undefined) updateFields["birthdate"] = birthdate;
+      if (sex !== undefined) updateFields["sex"] = sex;
+      if (tagId !== undefined) updateFields["tagId"] = tagId;
+      if (tagLocation !== undefined) updateFields["tagLocation"] = tagLocation;
+      if (weight !== undefined) updateFields["weight"] = weight;
+      if (status !== undefined) updateFields["status"] = status;
       if (originStatus !== undefined)
-        updateFields["livestocks.$.originStatus"] = originStatus;
-      if (remark !== undefined) updateFields["livestocks.$.remark"] = remark;
+        updateFields["originStatus"] = originStatus;
+      if (remark !== undefined) updateFields["remark"] = remark;
 
-      const updatedFarmland = await farmLandModel.findOneAndUpdate(
-        { farmland: farmlandId, "livestocks.tagId": tagId },
+      const updated = await livestock.findOneAndUpdate(
+        { tagId: livestockId },
         { $set: updateFields },
-        { new: true, arrayFilters: [{ "elem.tagId": tagId }] }
+        { new: true }
       );
 
-      if (!updatedFarmland) {
+      console.log(updated);
+
+      if (!updated) {
         return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "Update failed" });
       }
 
-      const updatedLivestock = updatedFarmland.livestocks.find((e) =>
-        mongoose.Types.ObjectId(e._id).equals(
-          mongoose.Types.ObjectId(fetchedLivestock._id)
-        )
-      );
-
-      return res.status(StatusCodes.OK).json(updatedLivestock);
+      return res.status(StatusCodes.OK).json(updated);
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "You are not in charge of this livestock",
       });
     }
   } catch (error) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
   }
 };
 
 // delete livestock
 
 const deleteLivestock = async (req, res) => {
-  const { farmlandId, tagId } = req.params;
+  const { farmlandId, livestockType, livestockId } = req.params;
 
   try {
-    // Fetch farmland
-    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
 
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
     if (!farmlandInDb) {
       return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
     }
 
     const requester = req.user;
@@ -473,10 +504,11 @@ const deleteLivestock = async (req, res) => {
       });
     }
 
+    // get livestock model
+    const livestock = getLivestockModel(farmlandId, livestockType);
+
     // Fetch livestock
-    const fetchedLivestock = farmlandInDb.livestocks.find(
-      (entry) => entry.tagId === tagId
-    );
+    const fetchedLivestock = await livestock.findOne({ tagId: livestockId });
 
     if (!fetchedLivestock) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -489,13 +521,15 @@ const deleteLivestock = async (req, res) => {
       fetchedLivestock.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
-      const deleted = await farmlandModel.findOneAndUpdate(
-        {
-          "livestocks.tagId": tagId,
-        },
-        { $pull: { livestocks: { tagId: tagId } } },
-        { new: true }
-      );
+      const deleteentry = await livestock.findOneAndDelete({
+        tagId: livestockId,
+      });
+
+      if (!deleteentry) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "delete failed" });
+      }
 
       return res
         .status(StatusCodes.OK)
@@ -506,6 +540,7 @@ const deleteLivestock = async (req, res) => {
       });
     }
   } catch (error) {
+    console.log(error);
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
       .json({ message: error });
@@ -513,38 +548,52 @@ const deleteLivestock = async (req, res) => {
 };
 
 // get livestock
+
 const getLivestock = async (req, res) => {
-  const { farmlandId, tagId } = req.params;
+  const { farmlandId, livestockType, livestockId } = req.params;
+
+  // Debugging logs
+  console.log("Request Parameters:", req.params);
+  console.log("farmlandId:", farmlandId);
+  console.log("livestockType:", livestockType);
+  console.log("livestockId:", livestockId);
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
 
   try {
-    // Fetch farmland
-    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
-
-    if (!farmlandInDb) {
-      return res
-        .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
-    }
-
     const requester = req.user;
-    const farmalndAdmin = farmlandInDb.admin;
+    const farmlandAdmin = farmlandInDb.admin;
 
     // Check if admin or workers are allowed into the farmland
     const isStaffOrAdmin =
-      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
       farmlandInDb.staffs.includes(requester.id);
 
-    // Check if admin or workers are allowed into the farmland
     if (!isStaffOrAdmin) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "You do not have permission to access this farmland",
       });
     }
 
+    const livestockModel = getLivestockModel(farmlandId, livestockType);
+
     // Fetch livestock
-    const fetchedLivestock = farmlandInDb.livestocks.find(
-      (entry) => entry.tagId === tagId
-    );
+    const fetchedLivestock = await livestockModel.findOne({
+      tagId: livestockId,
+    });
 
     if (!fetchedLivestock) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -554,12 +603,15 @@ const getLivestock = async (req, res) => {
 
     return res.status(StatusCodes.OK).json({ message: fetchedLivestock });
   } catch (error) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+    console.error("Error fetching livestock:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
   }
 };
 
 const quarantine = async (req, res) => {
-  const { farmlandId, tagId } = req.params;
+  const { farmlandId, livestockType, livestockId } = req.params;
   const { action, quarantine_date, reason } = req.body;
 
   if (!["Quarantine", "Release"].includes(action)) {
@@ -578,6 +630,12 @@ const quarantine = async (req, res) => {
         .json({ Error: "FarmLand not found" });
     }
 
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
     const requester = req.user;
     const farmalndAdmin = farmlandInDb.admin;
 
@@ -592,13 +650,15 @@ const quarantine = async (req, res) => {
       });
     }
 
+    // fetch livstock model
+    const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
+    const livestockModel = getLivestockModel(farmlandId, livestockType);
+
     // Fetch livestock
-    const isReleased = farmlandInDb.livestocks.find(
-      (entry) => entry.tagId === tagId
-    );
-    const isQuarantined = farmlandInDb.quarantines.find(
-      (entry) => entry.tagId === tagId
-    );
+    const isReleased = await livestockModel.findOne({ tagId: livestockId });
+    const isQuarantined = await quarantineModel.findOne({ tagId: livestockId });
+
+    console.log(isReleased, isQuarantined);
 
     //  check if the livestock is on the farmland
     if (!isReleased && !isQuarantined) {
@@ -626,10 +686,7 @@ const quarantine = async (req, res) => {
           });
         }
 
-        farmlandInDb.livestocks = farmlandInDb.livestocks.filter(
-          (entry) => entry.tagId !== tagId
-        );
-        // push livestock to quarantine array
+        // push livestock to quarantine model
 
         const newQuarantine = {
           inCharge: isReleased.inCharge,
@@ -646,16 +703,12 @@ const quarantine = async (req, res) => {
           remark: isReleased.remark,
         };
 
-        farmlandInDb.quarantines.push(newQuarantine);
+        await quarantineModel.create(newQuarantine);
+
+        // delete from livestockmodel
+        await livestockModel.findOneAndDelete({ tagId: livestockId });
       } else if (action === "Release" && isQuarantined) {
-        // remove from qurantine model then push to livestock model
-        farmlandInDb.quarantines = farmlandInDb.quarantines.filter(
-          (entry) => entry.tagId !== tagId
-        );
-
-        console.log("ready to realease");
-
-        // push livestock to quarantine model
+        // create a  document in the livestock model with the newly released data
         const newLivestock = {
           inCharge: isQuarantined.inCharge,
           breed: isQuarantined.breed,
@@ -668,8 +721,11 @@ const quarantine = async (req, res) => {
           status: isQuarantined.status,
           remark: isQuarantined.remark,
         };
+        await livestockModel.create(newLivestock);
 
-        farmlandInDb.livestocks.push(newLivestock);
+        // delete from quaratine model
+
+        await quarantineModel.findOneAndDelete({ tagId: livestockId });
       } else if (
         (action === "Quarantine" || action === "Release") &&
         (isQuarantined || isReleased)
@@ -679,9 +735,6 @@ const quarantine = async (req, res) => {
           .json({ message: `Livestock already ${action}d` });
       }
 
-      await farmlandInDb.save();
-
-      // Respond to the client
       res
         .status(StatusCodes.CREATED)
         .json({ message: `Livestock successfully ${action}d` });
@@ -697,7 +750,7 @@ const quarantine = async (req, res) => {
 };
 
 module.exports = {
-  createLiveStock,
+  createLivestock,
   farmLandDetails,
   processFarmlandRequest,
   updateLivestock,

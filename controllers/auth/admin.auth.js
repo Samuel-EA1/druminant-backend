@@ -93,6 +93,7 @@ const register = async (req, res) => {
       throw new Error("Failed creating farmland");
     }
   } catch (error) {
+    console.log(error)
     await farmlandModel.findOneAndDelete({ farmland });
     await adminModel.findOneAndDelete({ username });
     throw new Error(error);
