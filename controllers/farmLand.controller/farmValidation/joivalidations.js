@@ -12,4 +12,12 @@ const joiLivestockSchema = Joi.object({
   remark: Joi.string().allow("").optional(),
 });
 
-module.exports = joiLivestockSchema;
+const joiFinanceSchema = Joi.object({
+  financeEntryId: Joi.string().trim().regex(/^\S+$/).required(),
+  paymentmethod: Joi.string().valid("cash", "cheque", "transfer").required(),
+  desc: Joi.string().allow("").optional(),
+  transactionDate: Joi.date().required(),
+  amount: Joi.number().required(),
+});
+
+module.exports = {joiLivestockSchema,joiFinanceSchema};

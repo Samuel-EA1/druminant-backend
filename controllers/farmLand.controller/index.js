@@ -3,17 +3,20 @@ const { StatusCodes } = require("http-status-codes");
 const mongoose = require("mongoose");
 const farmlandModel = require("../../models/farmland.model");
 const staffModel = require("../../models/staff.model");
-
 const adminModel = require("../../models/admin.model");
-
 const Joi = require("joi");
-const joiLivestockSchema = require("./farmValidation/livestockValidation");
 
 const {
   getQuarantinedModel,
   getLivestockModel,
-} = require("../../models/DynamicLivestock");
+  getFinanceModel,
+} = require("../../models/getDynameModels");
+const {
+  joiLivestockSchema,
+  joiFinanceSchema,
+} = require("./farmValidation/joivalidations");
 
+// Joi schema for quarantine schema
 const quarantineJoiSchema = Joi.object({
   quarantine_date: Joi.date().required(),
   reason: Joi.string().required(),
@@ -447,8 +450,6 @@ const updateLivestock = async (req, res) => {
         { new: true }
       );
 
-      console.log(updated);
-
       if (!updated) {
         return res
           .status(StatusCodes.BAD_REQUEST)
@@ -552,12 +553,6 @@ const deleteLivestock = async (req, res) => {
 const getLivestock = async (req, res) => {
   const { farmlandId, livestockType, livestockId } = req.params;
 
-  // Debugging logs
-  console.log("Request Parameters:", req.params);
-  console.log("farmlandId:", farmlandId);
-  console.log("livestockType:", livestockType);
-  console.log("livestockId:", livestockId);
-
   // Fetch farmland
   const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
 
@@ -602,6 +597,52 @@ const getLivestock = async (req, res) => {
     }
 
     return res.status(StatusCodes.OK).json({ message: fetchedLivestock });
+  } catch (error) {
+    console.error("Error fetching livestock:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
+const getAllLivestocks = async (req, res) => {
+  const { farmlandId, livestockType, livestockId } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const livestockModel = getLivestockModel(farmlandId, livestockType);
+
+    const allLivestocks = await livestockModel.find();
+
+    return res.status(StatusCodes.OK).json({ message: allLivestocks });
   } catch (error) {
     console.error("Error fetching livestock:", error); // Log the error for debugging
     return res
@@ -657,8 +698,6 @@ const quarantine = async (req, res) => {
     // Fetch livestock
     const isReleased = await livestockModel.findOne({ tagId: livestockId });
     const isQuarantined = await quarantineModel.findOne({ tagId: livestockId });
-
-    console.log(isReleased, isQuarantined);
 
     //  check if the livestock is on the farmland
     if (!isReleased && !isQuarantined) {
@@ -749,14 +788,444 @@ const quarantine = async (req, res) => {
   }
 };
 
+// Finance routes
+// create finance
+const createFinance = async (req, res) => {
+  const { desc, transactionDate, amount, paymentmethod, financeEntryId } =
+    req.body;
+  const { farmlandId, livestockType, financeType } = req.params;
+
+  try {
+    const { error } = joiFinanceSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if the livestock type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    // check if the finance is allowed
+    if (!["income", "expense"].includes(financeType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid finance type" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the Finance modelfor this farmland
+      const FinanceModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        financeType
+      );
+
+      // Check for duplicate financeId within the same farmland collection
+      const existingFinance = await FinanceModel.findOne({
+        financeEntryId,
+      });
+      if (existingFinance) {
+        return res.status(400).json({
+          error: "Finance Id already exists for this farmland and finance type",
+        });
+      }
+
+      const { username } = requester.isAdmin
+        ? await adminModel.findOne({ _id: requester.id })
+        : await staffModel.findOne({ _id: requester.id });
+
+      // new cattle
+      const newFinance = {
+        inCharge: username,
+        financeEntryId,
+        paymentmethod,
+        desc,
+        transactionDate: new Date(transactionDate),
+        amount,
+      };
+
+      // create finance document
+
+      await FinanceModel.create(newFinance);
+
+      return res
+        .status(StatusCodes.CREATED)
+        .json({ message: "Finance created successfully" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// update finance
+const updateFinance = async (req, res) => {
+  const { desc, transactionDate, amount, paymentmethod, financeEntryId } =
+    req.body;
+  const { farmlandId, livestockType, financeType, financeId } = req.params;
+
+  try {
+    // const { error } = joiFinanceSchema.validate(req.body);
+    // if (error) {
+    //   return res.status(StatusCodes.BAD_REQUEST).json({
+    //     Error: error.details[0].message,
+    //   });
+    // }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if the livestock type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    // check if the finance is allowed
+    if (!["income", "expense"].includes(financeType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid finance type" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      const updateFields = {};
+
+      // Get the Finance modelfor this farmland
+      const FinanceModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        financeType
+      );
+
+      // Check for duplicate financeId within the same farmland collection
+      const existingFinance = await FinanceModel.findOne({
+        financeEntryId: financeId,
+      });
+
+      if (!existingFinance) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: `${financeType} not found`,
+        });
+      }
+
+      if (desc !== undefined) updateFields["desc"] = desc;
+      if (transactionDate !== undefined)
+        updateFields["transactionDate"] = transactionDate;
+      if (amount !== undefined) updateFields["amount"] = amount;
+      if (financeEntryId !== undefined)
+        updateFields["financeEntryId"] = financeEntryId;
+      if (paymentmethod !== undefined)
+        updateFields["paymentmethod"] = paymentmethod;
+
+      const updated = await FinanceModel.findOneAndUpdate(
+        { financeEntryId: financeId },
+        { $set: updateFields },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Update failed" });
+      }
+
+      return res.status(StatusCodes.OK).json(updated);
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// delete finance
+const deleteFinance = async (req, res) => {
+  const { farmlandId, livestockType, financeType, financeId } = req.params;
+
+  try {
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if the livestock type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    // check if the finance is allowed
+    if (!["income", "expense"].includes(financeType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid finance type" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the Finance model for this farmland
+      const FinanceModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        financeType
+      );
+
+      // Check for duplicate financeId within the same farmland collection
+
+      const existingFinance = await FinanceModel.findOne({
+        financeEntryId: financeId,
+      });
+
+      if (!existingFinance) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: `${financeType} not found`,
+        });
+      }
+
+      // delete document
+
+      const deleteentry = await FinanceModel.findOneAndDelete({
+        financeEntryId: financeId,
+      });
+
+      if (!deleteentry) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "delete failed" });
+      }
+
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "Finance successfully deleted" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// get a finance
+
+const getFinance = async (req, res) => {
+  const { farmlandId, livestockType, financeType, financeId } = req.params;
+
+  try {
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if the livestock type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    // check if the finance is allowed
+    if (!["income", "expense"].includes(financeType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid finance type" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the Finance model for this farmland
+      const FinanceModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        financeType
+      );
+
+      // Check for duplicate financeId within the same farmland collection
+
+      const existingFinance = await FinanceModel.findOne({
+        financeEntryId: financeId,
+      });
+
+      if (!existingFinance) {
+        return res.status(StatusCodes.NOT_FOUND).json({
+          message: `${financeType} not found`,
+        });
+      }
+
+      return res.status(StatusCodes.OK).json({ message: existingFinance });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// get all finances
+const getAllFinances = async (req, res) => {
+  const { farmlandId, livestockType, financeType } = req.params;
+
+  try {
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if the livestock type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    // check if the finance is allowed
+    if (!["income", "expense"].includes(financeType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid finance type" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the Finance model for this farmland
+      const FinanceModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        financeType
+      );
+
+      const allFinance = await FinanceModel.find();
+
+      return res.status(StatusCodes.OK).json({ message: allFinance });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
 module.exports = {
-  createLivestock,
+  // farmland
+  getFarmlandStaffs,
+  getFarmlandrequests,
   farmLandDetails,
   processFarmlandRequest,
+
+  // livestocks
+  createLivestock,
   updateLivestock,
   deleteLivestock,
   getLivestock,
-  getFarmlandStaffs,
-  getFarmlandrequests,
+  getAllLivestocks,
   quarantine,
+
+  // Finance
+  createFinance,
+  updateFinance,
+  deleteFinance,
+  getFinance,
+  getAllFinances,
 };

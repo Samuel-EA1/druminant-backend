@@ -24,6 +24,7 @@ const livestockSchema = new mongoose.Schema(
       required: true,
       trim: true,
       unique: true,
+      
     },
     tagLocation: {
       type: String,
