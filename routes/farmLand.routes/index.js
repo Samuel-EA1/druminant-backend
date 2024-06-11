@@ -17,6 +17,12 @@ const {
   getFinance,
   getAllLivestocks,
   getAllFinances,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getevent,
+  getAllEvents,
+  getEvent,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -37,7 +43,6 @@ router.get("/:farmlandId/requests/accepted", getFarmlandStaffs);
 router.get("/:farmlandId/requests/pending", getFarmlandrequests);
 
 // farmland finance
-
 router
   .post("/:farmlandId/finance/:livestockType/:financeType", createFinance)
   .patch(
@@ -53,5 +58,14 @@ router
     getFinance
   )
   .get("/:farmlandId/finance/:livestockType/:financeType", getAllFinances);
+
+// farmland event routes
+
+router
+  .post("/:farmlandId/event/:livestockType", createEvent)
+  .patch("/:farmlandId/event/:livestockType/:eventId", updateEvent)
+  .delete("/:farmlandId/event/:livestockType/:eventId", deleteEvent)
+  .get("/:farmlandId/event/:livestockType/:eventId", getEvent)
+  .get("/:farmlandId/event/:livestockType", getAllEvents);
 
 module.exports = router;

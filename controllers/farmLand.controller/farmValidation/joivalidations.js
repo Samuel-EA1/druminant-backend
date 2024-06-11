@@ -1,5 +1,6 @@
 const Joi = require("joi");
 
+// livestock
 const joiLivestockSchema = Joi.object({
   breed: Joi.string().required(),
   birthdate: Joi.date().required(),
@@ -12,6 +13,7 @@ const joiLivestockSchema = Joi.object({
   remark: Joi.string().allow("").optional(),
 });
 
+// finance
 const joiFinanceSchema = Joi.object({
   financeEntryId: Joi.string().trim().regex(/^\S+$/).required(),
   paymentmethod: Joi.string().valid("cash", "cheque", "transfer").required(),
@@ -20,4 +22,13 @@ const joiFinanceSchema = Joi.object({
   amount: Joi.number().required(),
 });
 
-module.exports = {joiLivestockSchema,joiFinanceSchema};
+// events
+
+const joiEventSchema = Joi.object({
+  eventEntryId: Joi.string().trim().regex(/^\S+$/).required(),
+  remark: Joi.string().allow("").optional(),
+  eventType: Joi.string().required(),
+  eventDate: Joi.date().required(),
+});
+
+module.exports = { joiLivestockSchema, joiFinanceSchema, joiEventSchema };

@@ -10,10 +10,12 @@ const {
   getQuarantinedModel,
   getLivestockModel,
   getFinanceModel,
+  getEventModel,
 } = require("../../models/getDynameModels");
 const {
   joiLivestockSchema,
   joiFinanceSchema,
+  joiEventSchema,
 } = require("./farmValidation/joivalidations");
 
 // Joi schema for quarantine schema
@@ -267,10 +269,10 @@ const createLivestock = async (req, res) => {
 
     if (isStaffOrAdmin) {
       // Get the livestock model for this farmland
-      const Livestock = getLivestockModel(farmlandId, livestockType);
+      const livestock = getLivestockModel(farmlandId, livestockType);
 
       // Check for duplicate tagId within the same farmland collection
-      const existingLivestock = await Livestock.findOne({
+      const existingLivestock = await livestock.findOne({
         tagId,
       });
       if (existingLivestock) {
@@ -283,8 +285,8 @@ const createLivestock = async (req, res) => {
         ? await adminModel.findOne({ _id: requester.id })
         : await staffModel.findOne({ _id: requester.id });
 
-      // new cattle
-      const newCattle = {
+      // new Livestock
+      const newLivestock = {
         inCharge: username,
         breed,
         birthdate: new Date(birthdate),
@@ -297,8 +299,7 @@ const createLivestock = async (req, res) => {
         remark: remark,
       };
 
-      const newLivestock = new Livestock(newCattle);
-      await newLivestock.save();
+      await livestock.create(newLivestock);
 
       return res
         .status(StatusCodes.CREATED)
@@ -1207,6 +1208,375 @@ const getAllFinances = async (req, res) => {
   }
 };
 
+// event routes
+
+// livestock
+const createEvent = async (req, res) => {
+  const { eventEntryId, eventType, eventDate, remark } = req.body;
+  const { farmlandId, livestockType } = req.params;
+
+  try {
+    const { error } = joiEventSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the event model for this farmland
+      const eventCollection = getEventModel(farmlandId, livestockType);
+
+      // Check for duplicate eventEntryId within the same farmland,livestock collection
+      const existingEvent = await eventCollection.findOne({
+        eventEntryId,
+      });
+      if (existingEvent) {
+        return res
+          .status(400)
+          .json({ error: "Event Id already exists for this livestock type" });
+      }
+
+      const { username } = requester.isAdmin
+        ? await adminModel.findOne({ _id: requester.id })
+        : await staffModel.findOne({ _id: requester.id });
+
+      // new event
+      const newEvent = {
+        inCharge: username,
+        eventDate: new Date(eventDate),
+        eventType,
+        eventEntryId,
+        remark,
+      };
+
+      console.log(newEvent);
+
+      const newLivestock = await eventCollection.create(newEvent);
+
+      console.log(newLivestock);
+
+      return res
+        .status(StatusCodes.CREATED)
+        .json({ message: "Livestock created successfully" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// update livestock data
+
+const updateEvent = async (req, res) => {
+  const { eventEntryId, eventType, eventDate, remark } = req.body;
+  const { farmlandId, livestockType, eventId } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ Error: "FarmLand not found" });
+    }
+
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const eventCollection = getEventModel(farmlandId, livestockType);
+
+    // Fetch event
+    const fetchedEvent = await eventCollection.findOne({
+      eventEntryId: eventId,
+    });
+
+    console.log(fetchedEvent);
+
+    if (!fetchedEvent) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Event not found",
+      });
+    }
+
+    // Check for event ownership
+    if (
+      fetchedEvent.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const updateFields = {};
+      if (eventEntryId !== undefined)
+        updateFields["eventEntryId"] = eventEntryId;
+      if (eventType !== undefined) updateFields["eventType"] = eventType;
+      if (eventDate !== undefined) updateFields["eventDate"] = eventDate;
+      if (remark !== undefined) updateFields["remark"] = remark;
+
+      const updated = await eventCollection.findOneAndUpdate(
+        { eventEntryId: eventId },
+        { $set: updateFields },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Update failed" });
+      }
+
+      return res.status(StatusCodes.OK).json(updated);
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this event",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
+// delete livestock
+
+const deleteEvent = async (req, res) => {
+  const { farmlandId, livestockType, eventId } = req.params;
+
+  try {
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    // Check if admin or workers are allowed into the farmland
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // get livestock model
+    const eventCollection = getEventModel(farmlandId, livestockType);
+
+    // Fetch livestock
+    const fetchedEvent = await eventCollection.findOne({
+      eventEntryId: eventId,
+    });
+
+    if (!fetchedEvent) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "event not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (
+      fetchedEvent.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const deleteEntry = await eventCollection.findOneAndDelete({
+        eventEntryId: eventId,
+      });
+
+       console.log(deleteEntry)
+
+      if (!deleteEntry) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "delete failed" });
+      }
+
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "event successfully deleted" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this event",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: error });
+  }
+};
+
+// get livestock
+
+const getEvent = async (req, res) => {
+  const { farmlandId, livestockType, eventId } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const eventCollection = getEventModel(farmlandId, livestockType);
+
+    // Fetch event
+    const fetchedEvent = await eventCollection.findOne({
+      eventEntryId: eventId,
+    });
+
+    if (!fetchedEvent) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Event not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({ message: fetchedEvent });
+  } catch (error) {
+    console.error("Error fetching event:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
+const getAllEvents = async (req, res) => {
+  const { farmlandId, livestockType, eventId } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const eventCollection = getEventModel(farmlandId, livestockType);
+
+    // Fetch event
+    const allEvents = await eventCollection.find();
+
+    if (!allEvents) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Event not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({ message: allEvents });
+  } catch (error) {
+    console.error("Error fetching event:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
 module.exports = {
   // farmland
   getFarmlandStaffs,
@@ -1228,4 +1598,11 @@ module.exports = {
   deleteFinance,
   getFinance,
   getAllFinances,
+
+  // event
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  getEvent,
+  getAllEvents,
 };
