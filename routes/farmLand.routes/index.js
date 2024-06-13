@@ -20,9 +20,18 @@ const {
   createEvent,
   updateEvent,
   deleteEvent,
-  getevent,
   getAllEvents,
   getEvent,
+  updateLactation,
+  deleteLactation,
+  getLactation,
+  getAllLactations,
+  createLactation,
+  createPregnancy,
+  updatePregnancy,
+  deletePregnancy,
+  getPregnancy,
+  getAllPregnancies,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -60,12 +69,29 @@ router
   .get("/:farmlandId/finance/:livestockType/:financeType", getAllFinances);
 
 // farmland event routes
-
 router
   .post("/:farmlandId/event/:livestockType", createEvent)
   .patch("/:farmlandId/event/:livestockType/:eventId", updateEvent)
   .delete("/:farmlandId/event/:livestockType/:eventId", deleteEvent)
   .get("/:farmlandId/event/:livestockType/:eventId", getEvent)
   .get("/:farmlandId/event/:livestockType", getAllEvents);
+
+// farmland lactation routes
+
+router
+  .post("/:farmlandId/lactation/:livestockType", createLactation)
+  .patch("/:farmlandId/lactation/:livestockType/:lactationId", updateLactation)
+  .delete("/:farmlandId/lactation/:livestockType/:lactationId", deleteLactation)
+  .get("/:farmlandId/lactation/:livestockType/:lactationId", getLactation)
+  .get("/:farmlandId/lactation/:livestockType", getAllLactations);
+
+// livestock pregnancy check routes
+
+router
+  .post("/:farmlandId/pregnancy/:livestockType", createPregnancy)
+  .get("/:farmlandId/pregnancy/:livestockType", getAllPregnancies)
+  .patch("/:farmlandId/pregnancy/:livestockType/:pregnancyId", updatePregnancy)
+  .delete("/:farmlandId/pregnancy/:livestockType/:pregnancyId", deletePregnancy)
+  .get("/:farmlandId/pregnancy/:livestockType/:pregnancyId", getPregnancy);
 
 module.exports = router;

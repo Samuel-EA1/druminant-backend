@@ -11,11 +11,15 @@ const {
   getLivestockModel,
   getFinanceModel,
   getEventModel,
+  getLactationModel,
+  getPregnancyModel,
 } = require("../../models/getDynameModels");
 const {
   joiLivestockSchema,
   joiFinanceSchema,
   joiEventSchema,
+  lactatingLivestockJoiSchema,
+  pregnancyJoiSchema,
 } = require("./farmValidation/joivalidations");
 
 // Joi schema for quarantine schema
@@ -457,7 +461,7 @@ const updateLivestock = async (req, res) => {
           .json({ message: "Update failed" });
       }
 
-      return res.status(StatusCodes.OK).json(updated);
+      return res.status(StatusCodes.OK).json({ message: updated });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "You are not in charge of this livestock",
@@ -895,13 +899,6 @@ const updateFinance = async (req, res) => {
   const { farmlandId, livestockType, financeType, financeId } = req.params;
 
   try {
-    // const { error } = joiFinanceSchema.validate(req.body);
-    // if (error) {
-    //   return res.status(StatusCodes.BAD_REQUEST).json({
-    //     Error: error.details[0].message,
-    //   });
-    // }
-
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
 
     // check for farmalnd
@@ -976,7 +973,7 @@ const updateFinance = async (req, res) => {
           .json({ message: "Update failed" });
       }
 
-      return res.status(StatusCodes.OK).json(updated);
+      return res.status(StatusCodes.OK).json({ message: updated });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "Only farmLand Admin or Staffs can create a livestock.",
@@ -1371,7 +1368,7 @@ const updateEvent = async (req, res) => {
           .json({ message: "Update failed" });
       }
 
-      return res.status(StatusCodes.OK).json(updated);
+      return res.status(StatusCodes.OK).json({ message: updated });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message: "You are not in charge of this event",
@@ -1443,7 +1440,7 @@ const deleteEvent = async (req, res) => {
         eventEntryId: eventId,
       });
 
-       console.log(deleteEntry)
+      console.log(deleteEntry);
 
       if (!deleteEntry) {
         return res
@@ -1577,6 +1574,796 @@ const getAllEvents = async (req, res) => {
   }
 };
 
+// lactation
+const createLactation = async (req, res) => {
+  const {
+    entryLactationId,
+    milkYield,
+    deliveryDate,
+    weight,
+    offspringNumber,
+    observation,
+    fat,
+    snf,
+    lactose,
+    salt,
+    protein,
+    water,
+  } = req.body;
+  const { farmlandId, livestockType } = req.params;
+
+  try {
+    const { error } = lactatingLivestockJoiSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the livestock model for this farmland
+      const lactationCollection = getLactationModel(farmlandId, livestockType);
+
+      console.log(lactationCollection);
+
+      // Check for duplicate tagId within the same farmland collection
+      const existingLivestock = await lactationCollection.findOne({
+        entryLactationId,
+      });
+      if (existingLivestock) {
+        return res.status(400).json({
+          error: "lactation Id already exists for this livestock type",
+        });
+      }
+
+      const { username } = requester.isAdmin
+        ? await adminModel.findOne({ _id: requester.id })
+        : await staffModel.findOne({ _id: requester.id });
+
+      // new Livestock
+      const newLactation = {
+        inCharge: username,
+        entryLactationId,
+        milkYield,
+        deliveryDate: new Date(deliveryDate),
+        weight,
+        offspringNumber,
+        observation,
+        fat,
+        snf,
+        lactose,
+        salt,
+        protein,
+        water,
+      };
+
+      await lactationCollection.create(newLactation);
+
+      return res
+        .status(StatusCodes.CREATED)
+        .json({ message: "lactation created successfully" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// update lactation data
+
+const updateLactation = async (req, res) => {
+  const {
+    entryLactationId,
+    milkYield,
+    deliveryDate,
+    weight,
+    offspringNumber,
+    observation,
+    fat,
+    snf,
+    lactose,
+    salt,
+    protein,
+    water,
+  } = req.body;
+  const { farmlandId, livestockType, lactationId } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ Error: "FarmLand not found" });
+    }
+
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const lactationCollection = getLactationModel(farmlandId, livestockType);
+
+    // Fetch livestock
+    const fetchedlactation = await lactationCollection.findOne({
+      entryLactationId: lactationId,
+    });
+
+    console.log(lactationId, entryLactationId);
+
+    if (!fetchedlactation) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Laction record not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (
+      fetchedlactation.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const updateFields = {};
+
+      if (entryLactationId !== undefined)
+        updateFields["entryLactationId"] = entryLactationId;
+      if (milkYield !== undefined) updateFields["milkYield"] = milkYield;
+      if (deliveryDate !== undefined)
+        updateFields["deliveryDate"] = deliveryDate;
+      if (weight !== undefined) updateFields["weight"] = weight;
+      if (offspringNumber !== undefined)
+        updateFields["offspringNumber"] = offspringNumber;
+      if (observation !== undefined) updateFields["observation"] = observation;
+      if (fat !== undefined) updateFields["fat"] = fat;
+      if (snf !== undefined) updateFields["snf"] = snf;
+      if (salt !== undefined) updateFields["salt"] = salt;
+      if (protein !== undefined) updateFields["protein"] = protein;
+      if (water !== undefined) updateFields["water"] = water;
+      if (lactose !== undefined) updateFields["lactose"] = lactose;
+
+      const updated = await lactationCollection.findOneAndUpdate(
+        { entryLactationId: lactationId },
+        { $set: updateFields },
+        { new: true }
+      );
+
+      if (!updated) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Update failed" });
+      }
+
+      return res.status(StatusCodes.OK).json({ message: updated });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this lactation record",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
+// delete lactation
+const deleteLactation = async (req, res) => {
+  const { farmlandId, livestockType, lactationId } = req.params;
+
+  try {
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    // Check if admin or workers are allowed into the farmland
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // get lactation model
+    const lactationCollection = getLactationModel(farmlandId, livestockType);
+
+    // Fetch lactation
+    const fetchedlactation = await lactationCollection.findOne({
+      entryLactationId: lactationId,
+    });
+
+    if (!fetchedlactation) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "lactation record not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (
+      fetchedlactation.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const deleteentry = await lactationCollection.findOneAndDelete({
+        entryLactationId: lactationId,
+      });
+
+      if (!deleteentry) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "operation failed" });
+      }
+
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "lactation record successfully deleted" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this lactation record",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: error });
+  }
+};
+
+// get lactation
+const getLactation = async (req, res) => {
+  const { farmlandId, livestockType, lactationId } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const lactationCollection = getLactationModel(farmlandId, livestockType);
+
+    // Fetch livestock
+    const fetchedlactation = await lactationCollection.findOne({
+      entryLactationId: lactationId,
+    });
+
+    if (!fetchedlactation) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Lactation record not found",
+      });
+    }
+
+    return res.status(StatusCodes.OK).json({ message: fetchedlactation });
+  } catch (error) {
+    console.error("Error fetching livestock:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
+const getAllLactations = async (req, res) => {
+  const { farmlandId, livestockType } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const lactationCollection = getLactationModel(farmlandId, livestockType);
+
+    const allLactations = await lactationCollection.find();
+
+    return res.status(StatusCodes.OK).json({ message: allLactations });
+  } catch (error) {
+    console.error("Error fetching lactation:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
+// pregnancy functions
+const createPregnancy = async (req, res) => {
+  const {
+    breed,
+    entryPregnancyId,
+    status,
+    breedingDate,
+    gestationPeriod,
+    remark,
+  } = req.body;
+  const { farmlandId, livestockType } = req.params;
+
+  try {
+    const { error } = pregnancyJoiSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check for pregnancy status
+    if (!["Yes", "No"].includes(status)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid pregnancy status type." });
+    }
+
+    // check if user is a admin or staff in the farmland
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (isStaffOrAdmin) {
+      // Get the pregnancy model for this farmland
+      const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
+
+      // Check for duplicate Id within the same farmland collection
+      const existingPregnancy = await pregnancyCollection.findOne({
+        entryPregnancyId,
+      });
+      if (existingPregnancy) {
+        return res.status(400).json({
+          error: "pregnancy Id already exists for this livestock type",
+        });
+      }
+
+      const { username } = requester.isAdmin
+        ? await adminModel.findOne({ _id: requester.id })
+        : await staffModel.findOne({ _id: requester.id });
+
+      // new Livestock
+      const newLactation = {
+        inCharge: username,
+        breed,
+        entryPregnancyId,
+        status,
+        breedingDate: new Date(breedingDate),
+        gestationPeriod,
+        remark,
+      };
+
+      await pregnancyCollection.create(newLactation);
+
+      return res
+        .status(StatusCodes.CREATED)
+        .json({ message: "Pregnancy record created successfully" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can create a livestock.",
+      });
+    }
+
+    //
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+// update lactation data
+
+const updatePregnancy = async (req, res) => {
+  const {
+    breed,
+    entryPregnancyId,
+    status,
+    breedingDate,
+    gestationPeriod,
+    remark,
+  } = req.body;
+  const { farmlandId, livestockType, pregnancyId } = req.params;
+
+  try {
+    const { error } = pregnancyJoiSchema.validate(req.body);
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        Error: error.details[0].message,
+      });
+    }
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    // check for pregnancy status
+    if (!["Yes", "No"].includes(status)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid pregnancy status type." });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
+
+    // Fetch pregnant livestock
+
+    const fetchedPregnantLivestock = await pregnancyCollection.findOne({
+      entryPregnancyId: pregnancyId,
+    });
+
+    if (!fetchedPregnantLivestock) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "pregnant record not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (
+      fetchedPregnantLivestock.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const updateFields = {};
+
+      if (entryPregnancyId !== undefined)
+        updateFields["entryPregnancyId"] = entryPregnancyId;
+      if (breed !== undefined) updateFields["breed"] = breed;
+      if (status !== undefined) updateFields["status"] = status;
+      if (breedingDate !== undefined)
+        updateFields["breedingDate"] = breedingDate;
+      if (gestationPeriod !== undefined)
+        updateFields["gestationPeriod"] = gestationPeriod;
+      if (remark !== undefined) updateFields["remark"] = remark;
+
+      Object.assign(fetchedPregnantLivestock, updateFields);
+      await fetchedPregnantLivestock.save();
+
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: fetchedPregnantLivestock });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this lactation record",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
+// delete lac
+const deletePregnancy = async (req, res) => {
+  const { farmlandId, livestockType, pregnancyId } = req.params;
+
+  try {
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    // Check if admin or workers are allowed into the farmland
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
+
+    // Fetch pregnant livestock
+
+    const fetchedPregnantLivestock = await pregnancyCollection.findOne({
+      entryPregnancyId: pregnancyId,
+    });
+
+    if (!fetchedPregnantLivestock) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "pregnant record not found",
+      });
+    }
+
+    // Check for livestock ownership
+    if (
+      fetchedPregnantLivestock.inCharge === requester.username ||
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+    ) {
+      const deleteentry = await pregnancyCollection.findOneAndDelete({
+        entryPregnancyId: pregnancyId,
+      });
+
+      if (!deleteentry) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "operation failed" });
+      }
+
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: "Pregnancy record successfully deleted" });
+    } else {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You are not in charge of this lactation record",
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: error });
+  }
+};
+
+// get pregnancy
+const getPregnancy = async (req, res) => {
+  const { farmlandId, livestockType, pregnancyId } = req.params
+  try {
+    
+
+    // check if the type is allowed
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ error: "Invalid livestock type" });
+    }
+
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    // check for farmalnd
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
+
+    // Fetch pregnant livestock
+
+    const fetchedPregnantLivestock = await pregnancyCollection.findOne({
+      entryPregnancyId: pregnancyId,
+    });
+
+    if (!fetchedPregnantLivestock) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "pregnant record not found",
+      });
+    }
+
+    return res
+      .status(StatusCodes.OK)
+      .json({ message: fetchedPregnantLivestock });
+  } catch (error) {
+    console.error("Error fetching livestock:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
+const getAllPregnancies = async (req, res) => {
+  const { farmlandId, livestockType, pregnancyId } = req.params;
+
+  // Fetch farmland
+  const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+  if (!farmlandInDb) {
+    return res
+      .status(StatusCodes.NOT_FOUND)
+      .json({ error: "Farmland not found" });
+  }
+
+  if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "Invalid livestock type" });
+  }
+
+  try {
+    const requester = req.user;
+    const farmlandAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmlandAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
+
+    const allPregnancies = await pregnancyCollection.find();
+
+    return res.status(StatusCodes.OK).json({ message: allPregnancies });
+  } catch (error) {
+    console.error("Error fetching lactation:", error); // Log the error for debugging
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: error.message });
+  }
+};
+
 module.exports = {
   // farmland
   getFarmlandStaffs,
@@ -1605,4 +2392,16 @@ module.exports = {
   deleteEvent,
   getEvent,
   getAllEvents,
+
+  createLactation,
+  updateLactation,
+  deleteLactation,
+  getLactation,
+  getAllLactations,
+
+  createPregnancy,
+  updatePregnancy,
+  deletePregnancy,
+  getPregnancy,
+  getAllPregnancies,
 };

@@ -31,4 +31,36 @@ const joiEventSchema = Joi.object({
   eventDate: Joi.date().required(),
 });
 
-module.exports = { joiLivestockSchema, joiFinanceSchema, joiEventSchema };
+// Combined Joi Schema for Lactating Livestock including Milk Composition
+const lactatingLivestockJoiSchema = Joi.object({
+  entryLactationId: Joi.string().trim().required(),
+  milkYield: Joi.number().required(),
+  deliveryDate: Joi.date().required(),
+  weight: Joi.number().required(),
+  offspringNumber: Joi.number().required(),
+  observation: Joi.string().required(),
+  fat: Joi.number().required(),
+  snf: Joi.number().required(), // Solid Not Fat
+  lactose: Joi.number().required(),
+  salt: Joi.number().required(),
+  protein: Joi.number().required(),
+  water: Joi.number().required(),
+});
+
+const pregnancyJoiSchema = Joi.object({
+  breed: Joi.string().required(),
+  entryPregnancyId: Joi.string().required(),
+  status: Joi.string().valid("Yes", "No").required(),
+  breedingDate: Joi.date().required(),
+  gestationPeriod: Joi.number().integer().min(0).required(),
+  ecd: Joi.date(),
+  remark: Joi.string().optional().allow(""),
+});
+
+module.exports = {
+  joiLivestockSchema,
+  joiFinanceSchema,
+  joiEventSchema,
+  lactatingLivestockJoiSchema,
+  pregnancyJoiSchema,
+};
