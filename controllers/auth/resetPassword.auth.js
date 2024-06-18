@@ -6,8 +6,18 @@ const staffModel = require("../../models/staff.model");
 const tokenModel = require("../../models/token.model");
 const { STATUS_CODES } = require("http");
 const { StatusCodes } = require("http-status-codes");
-
 const clientURL = process.env.CLIENT_URL;
+
+const fs = require("fs");
+const path = require("path");
+
+const getEmailHtml = (username, link, template) => {
+  const filePath = path.join(__dirname, `../../utils/${template}.html`);
+  let html = fs.readFileSync(filePath, "utf8");
+  html = html.replace("{{link}}", link);
+  html = html.replace("{{username}}", username);
+  return html;
+};
 
 const requestPasswordReset = async (req, res) => {
   const { email } = req.body;
@@ -48,7 +58,7 @@ const requestPasswordReset = async (req, res) => {
       from: process.env.EMAIL,
       to: user.email,
       subject: "Password Reset",
-      text: `Click on this link to reset your password: ${link}`,
+      html: getEmailHtml(user.username, link, "requestPasswordReset"),
     };
 
     await transporter.sendMail(mailOptions);
@@ -104,7 +114,7 @@ const resetPassword = async (req, res) => {
       from: process.env.EMAIL,
       to: user.email,
       subject: "Password reset successful",
-      text: `You have succesfully reseted your account password`,
+      html: getEmailHtml(user.username, "", "resetSuccessfull"),
     };
 
     await transporter.sendMail(mailOptions);
