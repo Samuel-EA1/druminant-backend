@@ -14,7 +14,6 @@ const registerSchema = Joi.object({
   farmland: Joi.string().required().trim(),
 });
 
-
 const register = async (req, res) => {
   const { farmland, username, email, password } = req.body;
 
@@ -49,7 +48,12 @@ const register = async (req, res) => {
     }
 
     // create staff
-    const user = await staffModel.create({ username, email, password });
+    const user = await staffModel.create({
+      username,
+      email,
+      password,
+      farmland,
+    });
 
     // push user_id to farmland array
     await farmlandInDb.requests.push(user._id);
@@ -68,7 +72,6 @@ const register = async (req, res) => {
     res.status(StatusCodes.CREATED).json({
       isAdmin: staffData.isAdmin,
       username: staffData.username,
-
       token,
     });
   } catch (error) {

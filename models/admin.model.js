@@ -12,6 +12,12 @@ const AdminSchema = new mongoose.Schema({
     trim: true,
     unique: true,
   },
+
+  farmland: {
+    type: String,
+    trim: true,
+  },
+
   username: {
     type: String,
     required: [true, "Please enter a username"],
@@ -64,8 +70,7 @@ AdminSchema.methods.createJwt = function () {
 
 // Method to compare given password with the hashed password in the database
 AdminSchema.methods.comparePassword = async function (candidatePassword) {
-  console.log(candidatePassword, this.password);
-  console.log(await bcrypt.compare(candidatePassword, this.password));
+  console.log(` From DB ${this.password}`);
   return await bcrypt.compare(candidatePassword, this.password);
 };
 

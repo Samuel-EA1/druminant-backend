@@ -14,7 +14,7 @@ const login = async (req, res) => {
   const { username, password } = req.body;
 
   const { error, value } = validateSchema.validate(req.body);
-
+ 
   if (error)
     return res.status(StatusCodes.BAD_REQUEST).json({
       Error: error.details[0].message,
@@ -36,6 +36,7 @@ const login = async (req, res) => {
 
     // If user is found, validate the password
 
+     
     const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
@@ -43,11 +44,17 @@ const login = async (req, res) => {
     }
 
     // If password is valid, generate JWT token and respond
-    const name = user.username;
+
     const { isAdmin } = user;
     const token = user.createJwt();
 
-    res.status(StatusCodes.OK).json({ isAdmin, username: name, token });
+    res.status(StatusCodes.OK).json({
+      isAdmin,
+      username: user.username,
+      status: user.status,
+      farmland: user.farmland,
+      token,
+    });
   } catch (error) {
     throw new UnauthenticatedError("Invalid credentials");
   }

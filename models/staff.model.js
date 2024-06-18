@@ -18,6 +18,11 @@ const StaffSchema = new mongoose.Schema({
     trim: true,
   },
 
+  farmland: {
+    type: String,
+    trim: true,
+  },
+
   username: {
     type: String,
     required: [true, "Please enter a username"],

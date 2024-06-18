@@ -27,7 +27,7 @@ const register = async (req, res) => {
     });
   }
 
-  console.log(value)
+ 
 
   // check if any of the req body is available or not
   const usernameInAdminCollection = await adminModel.findOne({ username });
@@ -58,7 +58,7 @@ const register = async (req, res) => {
 
     if (createFarmland) {
       // create admin
-      const user = await adminModel.create({ username, email, password });
+      const user = await adminModel.create({ username, email, password,farmland });
 
       if (user) {
         // asign created farmland to the admin

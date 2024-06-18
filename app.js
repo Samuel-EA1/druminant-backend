@@ -29,7 +29,8 @@ const adminRoutes = require("./routes/admin.routes/index");
 const staffRoutes = require("./routes/staff.routes/index");
 const farmLandRoutes = require("./routes/farmLand.routes/index");
 const loginRoute = require("./routes/login");
-const profileRoutes = require("./routes/profile")
+const profileRoutes = require("./routes/profile");
+const resetPasswordRoutes = require("./routes/reset.routes/index");
 
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
@@ -41,6 +42,7 @@ app.use(express.json());
 // extra packages
 
 // routes
+app.use("/api/v1/auth", resetPasswordRoutes);
 app.use("/api/v1/auth", loginRoute);
 app.use("/api/v1/auth/admin", adminRoutes);
 app.use("/api/v1/auth/staff", staffRoutes);
