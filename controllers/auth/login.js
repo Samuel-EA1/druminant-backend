@@ -1,10 +1,10 @@
 const express = require("express");
-const { BadRequestError, UnauthenticatedError } = require("../errors");
+const { BadRequestError, UnauthenticatedError } = require("../../errors");
 
 const { StatusCodes } = require("http-status-codes");
-const adminModel = require("../models/admin.model");
-const staffModel = require("../models/staff.model");
 const Joi = require("joi");
+const staffModel = require("../../models/staff.model");
+const adminModel = require("../../models/admin.model");
 
 const validateSchema = Joi.object({
   username: Joi.string().min(3).max(15).required().trim(),
@@ -14,7 +14,7 @@ const login = async (req, res) => {
   const { username, password } = req.body;
 
   const { error, value } = validateSchema.validate(req.body);
- 
+
   if (error)
     return res.status(StatusCodes.BAD_REQUEST).json({
       Error: error.details[0].message,
@@ -36,7 +36,6 @@ const login = async (req, res) => {
 
     // If user is found, validate the password
 
-     
     const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
@@ -60,4 +59,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = login;
+module.exports = { login };

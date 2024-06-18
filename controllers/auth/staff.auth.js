@@ -14,7 +14,7 @@ const registerSchema = Joi.object({
   farmland: Joi.string().required().trim(),
 });
 
-const register = async (req, res) => {
+module.exports = async (req, res) => {
   const { farmland, username, email, password } = req.body;
 
   //  validate request body using
@@ -90,8 +90,4 @@ const register = async (req, res) => {
     // delete staff from db
     await staffModel.findOneAndDelete({ username });
   }
-};
-
-module.exports = {
-  register,
 };

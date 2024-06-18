@@ -9,9 +9,16 @@ const rateLimit = require("express-rate-limit");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swaggerUi.json");
 
+const corsOptions = {
+  origin: ["http://localhost:3000", "https://druminant.vercel.app"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+  optionsSuccessStatus: 204,
+};
+
 // security packages
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(xss());
 // Express rate limiting to limit the number of requests from a particular client
 const limiter = rateLimit({
@@ -25,12 +32,10 @@ const connectDb = require("./db/connect");
 
 // routes
 
-const adminRoutes = require("./routes/admin.routes/index");
-const staffRoutes = require("./routes/staff.routes/index");
 const farmLandRoutes = require("./routes/farmLand.routes/index");
-const loginRoute = require("./routes/login");
+
 const profileRoutes = require("./routes/profile");
-const resetPasswordRoutes = require("./routes/reset.routes/index");
+const authRoutes = require("./routes/auth.routes/index");
 
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
@@ -42,10 +47,7 @@ app.use(express.json());
 // extra packages
 
 // routes
-app.use("/api/v1/auth", resetPasswordRoutes);
-app.use("/api/v1/auth", loginRoute);
-app.use("/api/v1/auth/admin", adminRoutes);
-app.use("/api/v1/auth/staff", staffRoutes);
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/farmland", authMiddleware, farmLandRoutes);
 app.use("/api/v1/profile", authMiddleware, profileRoutes);
 
@@ -54,7 +56,7 @@ app.get("/", (req, res) => {
   res
     .status(StatusCodes.OK)
     .send(
-      `<div><h1>Welcome to Job api.</h1> <a href='/api-docs'>Check our the documentation here</a> </div>`
+      `<div><h1>Welcome to Drunimant api.</h1> <a href='https://documenter.getpostman.com/view/18542024/2sA3XSCMwY#abfce83a-5344-4b41-859b-96d6959069e8'>Check our the documentation here</a> </div>`
     );
 });
 

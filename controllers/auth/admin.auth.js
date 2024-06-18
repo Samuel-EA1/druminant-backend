@@ -15,7 +15,7 @@ const registerSchema = Joi.object({
   farmland: Joi.string().required().trim(),
 });
 
-const register = async (req, res) => {
+module.exports = async (req, res) => {
   const { username, farmland, email, password } = req.body;
 
   // check if none of the req body is empty.
@@ -26,8 +26,6 @@ const register = async (req, res) => {
       Error: error.details[0].message,
     });
   }
-
- 
 
   // check if any of the req body is available or not
   const usernameInAdminCollection = await adminModel.findOne({ username });
@@ -58,7 +56,12 @@ const register = async (req, res) => {
 
     if (createFarmland) {
       // create admin
-      const user = await adminModel.create({ username, email, password,farmland });
+      const user = await adminModel.create({
+        username,
+        email,
+        password,
+        farmland,
+      });
 
       if (user) {
         // asign created farmland to the admin
@@ -93,13 +96,9 @@ const register = async (req, res) => {
       throw new Error("Failed creating farmland");
     }
   } catch (error) {
-    console.log(error)
+    console.log(error);
     await farmlandModel.findOneAndDelete({ farmland });
     await adminModel.findOneAndDelete({ username });
     throw new Error(error);
   }
-};
-
-module.exports = {
-  register,
 };
