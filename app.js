@@ -56,7 +56,7 @@ app.get("/", (req, res) => {
   res
     .status(StatusCodes.OK)
     .send(
-      `<div><h1>Welcome to Drunimant api.</h1> <a href='https://documenter.getpostman.com/view/18542024/2sA3XSCMwY#abfce83a-5344-4b41-859b-96d6959069e8'>Check our the documentation here</a> </div>`
+      `<div><h1>Welcome to Druminant api.</h1> <a href='https://documenter.getpostman.com/view/18542024/2sA3XSCMwY#abfce83a-5344-4b41-859b-96d6959069e8'>Check our the documentation here</a> </div>`
     );
 });
 
