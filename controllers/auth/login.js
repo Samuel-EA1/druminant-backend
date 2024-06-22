@@ -1,5 +1,4 @@
 const express = require("express");
-const { BadRequestError, UnauthenticatedError } = require("../../errors");
 
 const { StatusCodes } = require("http-status-codes");
 const Joi = require("joi");
@@ -50,6 +49,8 @@ const login = async (req, res) => {
 
     const { isAdmin } = user;
     const token = user.createJwt();
+
+    console.log(user)
 
     res.status(StatusCodes.OK).json({
       isAdmin,
