@@ -30,7 +30,9 @@ const login = async (req, res) => {
       user = await adminModel.findOne({ username });
       if (!user) {
         // If neither, throw an error
-        throw new UnauthenticatedError("Invalid credentials");
+        return res
+          .status(StatusCodes.UNAUTHORIZED)
+          .json({ message: "Invalid credentials" });
       }
     }
 
@@ -39,7 +41,9 @@ const login = async (req, res) => {
     const isValidPassword = await user.comparePassword(password);
 
     if (!isValidPassword) {
-      throw new UnauthenticatedError("Invalid credentials");
+      return res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json({ message: "Invalid credentials" });
     }
 
     // If password is valid, generate JWT token and respond
