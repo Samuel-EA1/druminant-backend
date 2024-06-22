@@ -59,7 +59,7 @@ const login = async (req, res) => {
       token,
     });
   } catch (error) {
-    throw new UnauthenticatedError("Invalid credentials");
+    return res.status(StatusCodes.UNAUTHORIZED).json({ Error: error });
   }
 };
 
