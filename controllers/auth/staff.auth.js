@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
   const { error, value } = registerSchema.validate(req.body);
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      Error: error.details[0].message,
+     message: error.details[0].message,
     });
   }
 

@@ -17,7 +17,7 @@ const login = async (req, res) => {
 
   if (error)
     return res.status(StatusCodes.BAD_REQUEST).json({
-      Error: error.details[0].message,
+      message: error.details[0].message,
     });
 
   try {
