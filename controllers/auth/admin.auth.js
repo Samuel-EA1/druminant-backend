@@ -8,11 +8,21 @@ const mongoose = require("mongoose");
 const Joi = require("joi");
 
 // Define Joi schema for registration
+// Define Joi schema for registration
 const registerSchema = Joi.object({
   username: Joi.string().min(3).max(15).required().trim(),
   email: Joi.string().email().required().trim().lowercase(),
   password: Joi.string().min(6).required().trim(),
-  farmland: Joi.string().required().trim(),
+  farmland: Joi.string()
+    .required()
+    .trim()
+    .custom((value, helper) => {
+      const noSpaces = value.replace(/\s+/g, ""); // Remove all spaces
+      if (noSpaces.length === 0) {
+        return helper.message("Farmland name cannot be empty or only spaces");
+      }
+      return noSpaces; // Return the value without spaces
+    }),
 });
 
 module.exports = async (req, res) => {
