@@ -16,6 +16,7 @@ const AdminSchema = new mongoose.Schema({
   farmland: {
     type: String,
     trim: true,
+    set: (value) => value.replace(/\s+/g, ""),
   },
 
   username: {

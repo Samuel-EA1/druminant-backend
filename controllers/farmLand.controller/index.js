@@ -242,7 +242,7 @@ const createLivestock = async (req, res) => {
     const { error } = joiLivestockSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
 
@@ -250,7 +250,7 @@ const createLivestock = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -282,7 +282,7 @@ const createLivestock = async (req, res) => {
       if (existingLivestock) {
         return res
           .status(400)
-          .json({ error: "Tag ID already exists for this farmland" });
+          .json({ message: "Tag ID already exists for this farmland" });
       }
 
       const { username } = requester.isAdmin
@@ -331,7 +331,7 @@ const farmLandDetails = async (req, res) => {
     });
 
     if (!farmlandInDb) {
-      res.status(StatusCodes.NOT_FOUND).json({ Error: "FarmLand not found" });
+      res.status(StatusCodes.NOT_FOUND).json({ message: "FarmLand not found" });
     }
 
     const requester = req.user;
@@ -346,7 +346,7 @@ const farmLandDetails = async (req, res) => {
     if (!isStaffOrAdmin)
       return res
         .status(StatusCodes.UNAUTHORIZED)
-        .json({ Error: "You do not have permision to access this farmland" });
+        .json({ message: "You do not have permision to access this farmland" });
 
     res.status(StatusCodes.OK).json(farmlandInDb);
   } catch (error) {
@@ -378,13 +378,13 @@ const updateLivestock = async (req, res) => {
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
+        .json({ message: "FarmLand not found" });
     }
 
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const requester = req.user;
@@ -483,7 +483,7 @@ const deleteLivestock = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -564,13 +564,13 @@ const getLivestock = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -606,7 +606,7 @@ const getLivestock = async (req, res) => {
     console.error("Error fetching livestock:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -619,13 +619,13 @@ const getAllLivestocks = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -652,7 +652,7 @@ const getAllLivestocks = async (req, res) => {
     console.error("Error fetching livestock:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -673,13 +673,13 @@ const quarantine = async (req, res) => {
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
+        .json({ message: "FarmLand not found" });
     }
 
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const requester = req.user;
@@ -726,7 +726,7 @@ const quarantine = async (req, res) => {
 
         if (error) {
           return res.status(StatusCodes.BAD_REQUEST).json({
-            Error: error.details[0].message,
+            message: error.details[0].message,
           });
         }
 
@@ -804,7 +804,7 @@ const createFinance = async (req, res) => {
     const { error } = joiFinanceSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
 
@@ -821,14 +821,14 @@ const createFinance = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     // check if the finance is allowed
     if (!["income", "expense"].includes(financeType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid finance type" });
+        .json({ message: "Invalid finance type" });
     }
 
     // check if user is a admin or staff in the farmland
@@ -854,7 +854,7 @@ const createFinance = async (req, res) => {
       });
       if (existingFinance) {
         return res.status(400).json({
-          error: "Finance Id already exists for this farmland and finance type",
+          message: "Finance Id already exists for this farmland and finance type",
         });
       }
 
@@ -912,14 +912,14 @@ const updateFinance = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     // check if the finance is allowed
     if (!["income", "expense"].includes(financeType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid finance type" });
+        .json({ message: "Invalid finance type" });
     }
 
     // check if user is a admin or staff in the farmland
@@ -1005,14 +1005,14 @@ const deleteFinance = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     // check if the finance is allowed
     if (!["income", "expense"].includes(financeType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid finance type" });
+        .json({ message: "Invalid finance type" });
     }
 
     // check if user is a admin or staff in the farmland
@@ -1091,14 +1091,14 @@ const getFinance = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     // check if the finance is allowed
     if (!["income", "expense"].includes(financeType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid finance type" });
+        .json({ message: "Invalid finance type" });
     }
 
     // check if user is a admin or staff in the farmland
@@ -1162,14 +1162,14 @@ const getAllFinances = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     // check if the finance is allowed
     if (!["income", "expense"].includes(financeType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid finance type" });
+        .json({ message: "Invalid finance type" });
     }
 
     // check if user is a admin or staff in the farmland
@@ -1216,7 +1216,7 @@ const createEvent = async (req, res) => {
     const { error } = joiEventSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
 
@@ -1224,7 +1224,7 @@ const createEvent = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -1256,7 +1256,7 @@ const createEvent = async (req, res) => {
       if (existingEvent) {
         return res
           .status(400)
-          .json({ error: "Event Id already exists for this livestock type" });
+          .json({ message: "Event Id already exists for this livestock type" });
       }
 
       const { username } = requester.isAdmin
@@ -1307,13 +1307,13 @@ const updateEvent = async (req, res) => {
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
+        .json({ message: "FarmLand not found" });
     }
 
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const requester = req.user;
@@ -1390,7 +1390,7 @@ const deleteEvent = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -1475,13 +1475,13 @@ const getEvent = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -1517,7 +1517,7 @@ const getEvent = async (req, res) => {
     console.error("Error fetching event:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -1530,13 +1530,13 @@ const getAllEvents = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -1570,7 +1570,7 @@ const getAllEvents = async (req, res) => {
     console.error("Error fetching event:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -1596,7 +1596,7 @@ const createLactation = async (req, res) => {
     const { error } = lactatingLivestockJoiSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
 
@@ -1604,7 +1604,7 @@ const createLactation = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -1637,7 +1637,7 @@ const createLactation = async (req, res) => {
       });
       if (existingLivestock) {
         return res.status(400).json({
-          error: "lactation Id already exists for this livestock type",
+          message: "lactation Id already exists for this livestock type",
         });
       }
 
@@ -1706,13 +1706,13 @@ const updateLactation = async (req, res) => {
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
-        .json({ Error: "FarmLand not found" });
+        .json({ message: "FarmLand not found" });
     }
 
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const requester = req.user;
@@ -1799,7 +1799,7 @@ const deleteLactation = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -1881,13 +1881,13 @@ const getLactation = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -1923,7 +1923,7 @@ const getLactation = async (req, res) => {
     console.error("Error fetching livestock:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -1936,13 +1936,13 @@ const getAllLactations = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -1969,7 +1969,7 @@ const getAllLactations = async (req, res) => {
     console.error("Error fetching lactation:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -1989,7 +1989,7 @@ const createPregnancy = async (req, res) => {
     const { error } = pregnancyJoiSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
 
@@ -1997,7 +1997,7 @@ const createPregnancy = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -2035,7 +2035,7 @@ const createPregnancy = async (req, res) => {
       });
       if (existingPregnancy) {
         return res.status(400).json({
-          error: "pregnancy Id already exists for this livestock type",
+          message: "pregnancy Id already exists for this livestock type",
         });
       }
 
@@ -2089,14 +2089,14 @@ const updatePregnancy = async (req, res) => {
     const { error } = pregnancyJoiSchema.validate(req.body);
     if (error) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        Error: error.details[0].message,
+        message: error.details[0].message,
       });
     }
     // check if the type is allowed
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -2185,7 +2185,7 @@ const deletePregnancy = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -2267,7 +2267,7 @@ const getPregnancy = async (req, res) => {
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "Invalid livestock type" });
+        .json({ message: "Invalid livestock type" });
     }
 
     const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
@@ -2314,7 +2314,7 @@ const getPregnancy = async (req, res) => {
     console.error("Error fetching livestock:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
@@ -2327,13 +2327,13 @@ const getAllPregnancies = async (req, res) => {
   if (!farmlandInDb) {
     return res
       .status(StatusCodes.NOT_FOUND)
-      .json({ error: "Farmland not found" });
+      .json({ message: "Farmland not found" });
   }
 
   if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
     return res
       .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "Invalid livestock type" });
+      .json({ message: "Invalid livestock type" });
   }
 
   try {
@@ -2360,7 +2360,7 @@ const getAllPregnancies = async (req, res) => {
     console.error("Error fetching lactation:", error); // Log the error for debugging
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json({ error: error.message });
+      .json({ message: error.message });
   }
 };
 
