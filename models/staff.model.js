@@ -66,7 +66,12 @@ StaffSchema.pre("save", async function (next) {
 
 StaffSchema.methods.createJwt = function () {
   return jwt.sign(
-    { isAdmin: this.isAdmin, id: this._id, username: this.username },
+    {
+      isAdmin: this.isAdmin,
+      id: this._id,
+      username: this.username,
+      farmland: this.farmland,
+    },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_LIFETIME,

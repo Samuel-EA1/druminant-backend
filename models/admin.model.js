@@ -60,7 +60,12 @@ AdminSchema.pre("save", async function (next) {
 // Create JWT token for Admin
 AdminSchema.methods.createJwt = function () {
   return jwt.sign(
-    { id: this._id, isAdmin: this.isAdmin, username: this.username },
+    {
+      id: this._id,
+      isAdmin: this.isAdmin,
+      username: this.username,
+      farmland: this.farmland,
+    },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_LIFETIME,

@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
   try {
     const payLoad = jwt.verify(token, process.env.JWT_SECRET);
     const userId = mongoose.Types.ObjectId(payLoad.id);
-
+ 
     req.user = {
       isAdmin: payLoad.isAdmin,
       id: userId,
