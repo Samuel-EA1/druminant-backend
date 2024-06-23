@@ -71,6 +71,7 @@ StaffSchema.methods.createJwt = function () {
       id: this._id,
       username: this.username,
       farmland: this.farmland,
+      status:this.status
     },
     process.env.JWT_SECRET,
     {
