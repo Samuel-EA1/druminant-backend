@@ -829,9 +829,12 @@ const getAllQuarantine = async (req, res) => {
     // fetch livstock model
     const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
 
+
     // check for quarantine date  and reason
 
-    const getAllQuarantined = quarantineModel.find();
+    const getAllQuarantined = await quarantineModel.find();
+    
+
     res.status(StatusCodes.CREATED).json({ message: getAllQuarantined });
   } catch (error) {
     console.log(error);
