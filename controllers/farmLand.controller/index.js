@@ -793,6 +793,52 @@ const quarantine = async (req, res) => {
   }
 };
 
+const getAllQuarantine = async (req, res) => {
+  const { farmlandId, livestockType } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "FarmLand not found" });
+    }
+
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid livestock type" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // fetch livstock model
+    const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
+
+    // check for quarantine date  and reason
+
+    const getAllQuarantined = quarantineModel.find();
+    res.status(StatusCodes.CREATED).json({ message: getAllQuarantined });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
 // Finance routes
 // create finance
 const createFinance = async (req, res) => {
@@ -854,7 +900,8 @@ const createFinance = async (req, res) => {
       });
       if (existingFinance) {
         return res.status(400).json({
-          message: "Finance Id already exists for this farmland and finance type",
+          message:
+            "Finance Id already exists for this farmland and finance type",
         });
       }
 
@@ -2259,10 +2306,8 @@ const deletePregnancy = async (req, res) => {
 
 // get pregnancy
 const getPregnancy = async (req, res) => {
-  const { farmlandId, livestockType, pregnancyId } = req.params
+  const { farmlandId, livestockType, pregnancyId } = req.params;
   try {
-    
-
     // check if the type is allowed
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
@@ -2378,6 +2423,7 @@ module.exports = {
   getLivestock,
   getAllLivestocks,
   quarantine,
+  getAllQuarantine,
 
   // Finance
   createFinance,

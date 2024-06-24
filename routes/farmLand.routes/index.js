@@ -10,6 +10,7 @@ const {
   getFarmlandStaffs,
   getFarmlandrequests,
   quarantine,
+  getAllQuarantine,
   createLivestock,
   createFinance,
   updateFinance,
@@ -44,7 +45,8 @@ router
   .delete("/:farmlandId/livestock/:livestockType/:livestockId", deleteLivestock)
   .get("/:farmlandId/livestock/:livestockType/:livestockId", getLivestock)
   .get("/:farmlandId/livestock/:livestockType", getAllLivestocks)
-  .post("/:farmlandId/livestock/:livestockType/:livestockId", quarantine);
+  .post("/:farmlandId/livestock/:livestockType/:livestockId", quarantine)
+  .get("/:farmlandId/quarantine/:livestockType", getAllQuarantine);
 
 // farmland requests
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
