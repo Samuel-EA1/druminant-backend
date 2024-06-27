@@ -33,6 +33,7 @@ const {
   deletePregnancy,
   getPregnancy,
   getAllPregnancies,
+  getAllModuleCounts,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -95,5 +96,9 @@ router
   .patch("/:farmlandId/pregnancy/:livestockType/:pregnancyId", updatePregnancy)
   .delete("/:farmlandId/pregnancy/:livestockType/:pregnancyId", deletePregnancy)
   .get("/:farmlandId/pregnancy/:livestockType/:pregnancyId", getPregnancy);
+
+// module count
+
+router.get("/:farmlandId/moduleCount", getAllModuleCounts);
 
 module.exports = router;

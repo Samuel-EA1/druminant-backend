@@ -10,7 +10,7 @@ const livestockSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    birthdate: {
+    birthDate: {
       type: Date,
       required: true,
     },
@@ -24,7 +24,6 @@ const livestockSchema = new mongoose.Schema(
       required: true,
       trim: true,
       unique: true,
-      
     },
     tagLocation: {
       type: String,
@@ -36,12 +35,12 @@ const livestockSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["Healthy", "Sick", "Deceased"],
+      enum: ["Healthy", "Sick", "Deceased", "Pregnant", "Injured"],
       required: true,
     },
-    originStatus: {
+    origin: {
       type: String,
-      enum: ["Purchased", "Born on Farm"],
+      enum: ["Born on farm", "Purchased", "Donated", "Inherited", "Adopted"],
       required: true,
     },
     remark: {

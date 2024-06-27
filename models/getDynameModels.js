@@ -10,7 +10,7 @@ const getLivestockModel = (farmlandId, livestockType) => {
   const collectionName = `${farmlandId}_${livestockType}_livestock`;
   return mongoose.model(collectionName, livestockSchema, collectionName);
 };
-
+ 
 const getQuarantinedModel = (farmlandId, livestockType) => {
   const collectionName = `${farmlandId}_quarantined_${livestockType}`;
   return mongoose.model(collectionName, quarantineSchema, collectionName);

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const quarantineSchema = new mongoose.Schema(
   {
-    quarantine_date: { type: Date, required: true },
+    quarantineDate: { type: Date, required: true },
     reason: {
       type: String,
       required: true,
@@ -15,7 +15,7 @@ const quarantineSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    birthdate: {
+    birthDate: {
       type: Date,
       required: true,
     },
@@ -38,14 +38,15 @@ const quarantineSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+
     status: {
       type: String,
-      enum: ["Healthy", "Sick", "Deceased"],
+      enum: ["Healthy", "Sick", "Deceased", "Pregnant", "Injured"],
       required: true,
     },
-    originStatus: {
+    origin: {
       type: String,
-      enum: ["Purchased", "Born on Farm"],
+      enum: ["Born on farm", "Purchased", "Donated", "Inherited", "Adopted"],
       required: true,
     },
     remark: {

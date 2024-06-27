@@ -3,13 +3,24 @@ const Joi = require("joi");
 // livestock
 const joiLivestockSchema = Joi.object({
   breed: Joi.string().required(),
-  birthdate: Joi.date().required(),
+  birthDate: Joi.date().required(),
   sex: Joi.string().valid("Male", "Female").required(),
   tagId: Joi.string().trim().regex(/^\S+$/).required(),
   tagLocation: Joi.string().required(),
   weight: Joi.number().required(),
-  status: Joi.string().valid("Healthy", "Sick", "Deceased").required(),
-  originStatus: Joi.string().valid("Purchased", "Born on Farm").required(),
+  status: Joi.string()
+    .valid("Healthy", "Sick", "Deceased", "Pregnant", "Injured")
+    .required(),
+
+  origin: Joi.string()
+    .valid(
+      "Born on farm",
+      "Purchased",
+      "Donated",
+      "Inherited",
+      "Adopted"
+    )
+    .required(),
   remark: Joi.string().allow("").optional(),
 });
 

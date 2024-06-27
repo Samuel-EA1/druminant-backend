@@ -24,7 +24,7 @@ const {
 
 // Joi schema for quarantine schema
 const quarantineJoiSchema = Joi.object({
-  quarantine_date: Joi.date().required(),
+  quarantineDate: Joi.date().required(),
   reason: Joi.string().required(),
 });
 
@@ -227,10 +227,10 @@ const getFarmlandrequests = async (req, res) => {
 const createLivestock = async (req, res) => {
   const {
     breed,
-    birthdate,
+    birthDate,
     sex,
     tagId,
-    originStatus,
+    origin,
     tagLocation,
     weight,
     status,
@@ -293,11 +293,11 @@ const createLivestock = async (req, res) => {
       const newLivestock = {
         inCharge: username,
         breed,
-        birthdate: new Date(birthdate),
+        birthDate: new Date(birthDate),
         sex,
         tagId,
         tagLocation,
-        originStatus,
+        origin,
         weight,
         status,
         remark: remark,
@@ -360,13 +360,13 @@ const updateLivestock = async (req, res) => {
   const { farmlandId, livestockId, livestockType } = req.params;
   const {
     breed,
-    birthdate,
+    birthDate,
     sex,
     tagId,
     tagLocation,
     weight,
     status,
-    originStatus,
+    origin,
     remark,
   } = req.body;
 
@@ -424,29 +424,38 @@ const updateLivestock = async (req, res) => {
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "The sex provided is not a valid option" });
       }
-      if (status && !["Healthy", "Sick", "Deceased"].includes(status)) {
+
+      if (
+        status &&
+        !["Healthy", "Sick", "Deceased", "Pregnant", "Injured"].includes(status)
+      ) {
         return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "The status provided is not a valid option" });
       }
       if (
-        originStatus &&
-        !["Purchased", "Born on Farm"].includes(originStatus)
+        origin &&
+        ![
+          "Born on farm",
+          "Purchased",
+          "Donated",
+          "Inherited",
+          "Adopted",
+        ].includes(origin)
       ) {
         return res
           .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "The originStatus provided is not a valid option" });
+          .json({ message: "The origin provided is not a valid option" });
       }
 
       if (breed !== undefined) updateFields["breed"] = breed;
-      if (birthdate !== undefined) updateFields["birthdate"] = birthdate;
+      if (birthDate !== undefined) updateFields["birthDate"] = birthDate;
       if (sex !== undefined) updateFields["sex"] = sex;
       if (tagId !== undefined) updateFields["tagId"] = tagId;
       if (tagLocation !== undefined) updateFields["tagLocation"] = tagLocation;
       if (weight !== undefined) updateFields["weight"] = weight;
       if (status !== undefined) updateFields["status"] = status;
-      if (originStatus !== undefined)
-        updateFields["originStatus"] = originStatus;
+      if (origin !== undefined) updateFields["origin"] = origin;
       if (remark !== undefined) updateFields["remark"] = remark;
 
       const updated = await livestock.findOneAndUpdate(
@@ -658,7 +667,7 @@ const getAllLivestocks = async (req, res) => {
 
 const quarantine = async (req, res) => {
   const { farmlandId, livestockType, livestockId } = req.params;
-  const { action, quarantine_date, reason } = req.body;
+  const { action, quarantineDate, reason } = req.body;
 
   if (!["Quarantine", "Release"].includes(action)) {
     return res
@@ -720,7 +729,7 @@ const quarantine = async (req, res) => {
         // check for quarantine date  and reason
 
         const { error } = quarantineJoiSchema.validate({
-          quarantine_date,
+          quarantineDate,
           reason,
         });
 
@@ -734,14 +743,14 @@ const quarantine = async (req, res) => {
 
         const newQuarantine = {
           inCharge: isReleased.inCharge,
-          quarantine_date: new Date(quarantine_date),
+          quarantineDate: new Date(quarantineDate),
           reason: reason,
           breed: isReleased.breed,
-          birthdate: isReleased.birthdate,
+          birthDate: isReleased.birthDate,
           sex: isReleased.sex,
           tagId: isReleased.tagId,
           tagLocation: isReleased.tagLocation,
-          originStatus: isReleased.originStatus,
+          origin: isReleased.origin,
           weight: isReleased.weight,
           status: isReleased.status,
           remark: isReleased.remark,
@@ -756,11 +765,11 @@ const quarantine = async (req, res) => {
         const newLivestock = {
           inCharge: isQuarantined.inCharge,
           breed: isQuarantined.breed,
-          birthdate: isQuarantined.birthdate,
+          birthDate: isQuarantined.birthDate,
           sex: isQuarantined.sex,
           tagId: isQuarantined.tagId,
           tagLocation: isQuarantined.tagLocation,
-          originStatus: isQuarantined.originStatus,
+          origin: isQuarantined.origin,
           weight: isQuarantined.weight,
           status: isQuarantined.status,
           remark: isQuarantined.remark,
@@ -829,11 +838,9 @@ const getAllQuarantine = async (req, res) => {
     // fetch livstock model
     const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
 
-
     // check for quarantine date  and reason
 
     const getAllQuarantined = await quarantineModel.find();
-    
 
     res.status(StatusCodes.CREATED).json({ message: getAllQuarantined });
   } catch (error) {
@@ -844,6 +851,7 @@ const getAllQuarantine = async (req, res) => {
 
 // Finance routes
 // create finance
+
 const createFinance = async (req, res) => {
   const { desc, transactionDate, amount, paymentmethod, financeEntryId } =
     req.body;
@@ -1679,8 +1687,6 @@ const createLactation = async (req, res) => {
       // Get the livestock model for this farmland
       const lactationCollection = getLactationModel(farmlandId, livestockType);
 
-      console.log(lactationCollection);
-
       // Check for duplicate tagId within the same farmland collection
       const existingLivestock = await lactationCollection.findOne({
         entryLactationId,
@@ -2412,6 +2418,106 @@ const getAllPregnancies = async (req, res) => {
   }
 };
 
+// get module counts
+
+const getAllModuleCounts = async (req, res) => {
+  const { farmlandId } = req.params;
+  const livestockNames = ["cattle", "sheep", "pig", "goat"];
+
+  try {
+    const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Farmland not found" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only farmLand Admin or Staffs can access this data.",
+      });
+    }
+
+    //all module models
+    //  const livestock = getLivestockModel(farmlandId, livestockType);
+    //  const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
+    //  const FinanceModel = getFinanceModel(
+    //    farmlandId,
+    //    livestockType,
+    //    financeType
+    //  );
+    //  const eventModel = getEventModel(farmlandId, livestockType);
+    //  const lactationModel = getLactationModel(farmlandId, livestockType);
+    //  const pregnancyModel = getPregnancyModel(farmlandId, livestockType);
+
+    const fetchModuleCount = async (
+      modelFunc,
+      livestockType,
+      additionalParam = ""
+    ) => {
+      const model = modelFunc(farmlandId, livestockType, additionalParam);
+      const count = await model.countDocuments({});
+      return { name: livestockType, data: count };
+    };
+
+    const results = await Promise.all(
+      livestockNames.map(async (livestockName) => {
+        const livestockCount = await fetchModuleCount(
+          getLivestockModel,
+          livestockName
+        );
+        const eventCount = await fetchModuleCount(getEventModel, livestockName);
+        const pregnancyCount = await fetchModuleCount(
+          getPregnancyModel,
+          livestockName
+        );
+        const lactationCount = await fetchModuleCount(
+          getLactationModel,
+          livestockName
+        );
+        const quarantineCount = await fetchModuleCount(
+          getQuarantinedModel,
+          livestockName
+        );
+        const incomeCount = await fetchModuleCount(
+          getFinanceModel,
+          livestockName,
+          "income"
+        );
+        const expenseCount = await fetchModuleCount(
+          getFinanceModel,
+          livestockName,
+          "expense"
+        );
+
+        return {
+          livestockCount,
+          eventCount,
+          pregnancyCount,
+          lactationCount,
+          quarantineCount,
+          incomeCount,
+          expenseCount,
+        };
+      })
+    );
+
+    res.status(StatusCodes.OK).json({ message: results });
+  } catch (error) {
+    console.log(error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
+  }
+};
+
+module.exports = { getAllModuleCounts };
+
 module.exports = {
   // farmland
   getFarmlandStaffs,
@@ -2453,4 +2559,7 @@ module.exports = {
   deletePregnancy,
   getPregnancy,
   getAllPregnancies,
+
+  // module entries count
+  getAllModuleCounts,
 };
