@@ -27,7 +27,7 @@ const joiLivestockSchema = Joi.object({
 // finance
 const joiFinanceSchema = Joi.object({
   financeEntryId: Joi.string().trim().regex(/^\S+$/).required(),
-  paymentmethod: Joi.string().valid("cash", "cheque", "transfer").required(),
+  paymentmethod: Joi.string().valid("Cash", "Cheque", "Transfer").required(),
   desc: Joi.string().allow("").optional(),
   transactionDate: Joi.date().required(),
   amount: Joi.number().required(),

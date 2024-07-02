@@ -6,7 +6,7 @@ const financeSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    remark: {
+    desc: {
       type: String,
     },
     financeEntryId: {
@@ -18,8 +18,8 @@ const financeSchema = new mongoose.Schema(
 
     paymentmethod: {
       type: String,
-      enum: ["cash", "cheque", "transfer"],
-      required: true,
+      enum: ["Cash", "Cheque", "Transfer"],
+      required: true, 
     },
 
     transactionDate: {

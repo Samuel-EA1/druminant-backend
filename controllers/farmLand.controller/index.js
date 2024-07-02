@@ -150,12 +150,6 @@ const getFarmlandStaffs = async (req, res) => {
 
     const accepted = await farmlandInDb.staffs;
 
-    if (accepted.length < 1) {
-      return res
-        .status(StatusCodes.OK)
-        .json({ message: "No staffs working on this farmland" });
-    }
-
     const staffRes = await Promise.all(
       accepted.map(async (_id) => await staffModel.findOne({ _id }))
     );
@@ -198,9 +192,7 @@ const getFarmlandrequests = async (req, res) => {
     const accepted = await farmlandInDb.requests;
 
     if (accepted.length < 1) {
-      return res
-        .status(StatusCodes.OK)
-        .json({ message: "No requests on this farmland" });
+      return res.status(StatusCodes.OK).json({ message: [] });
     }
 
     const pendingRes = await Promise.all(
@@ -653,7 +645,6 @@ const getAllLivestocks = async (req, res) => {
     }
 
     const livestockModel = getLivestockModel(farmlandId, livestockType);
-
     const allLivestocks = await livestockModel.find();
 
     return res.status(StatusCodes.OK).json({ message: allLivestocks });
@@ -899,14 +890,14 @@ const createFinance = async (req, res) => {
 
     if (isStaffOrAdmin) {
       // Get the Finance modelfor this farmland
-      const FinanceModel = getFinanceModel(
+      const financeModel = getFinanceModel(
         farmlandId,
         livestockType,
         financeType
       );
 
       // Check for duplicate financeId within the same farmland collection
-      const existingFinance = await FinanceModel.findOne({
+      const existingFinance = await financeModel.findOne({
         financeEntryId,
       });
       if (existingFinance) {
@@ -932,14 +923,15 @@ const createFinance = async (req, res) => {
 
       // create finance document
 
-      await FinanceModel.create(newFinance);
+      await financeModel.create(newFinance);
 
       return res
         .status(StatusCodes.CREATED)
         .json({ message: "Finance created successfully" });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or Staffs can create a livestock.",
+        message:
+          "Only farmLand Admin or Staffs can create, view and modify Finance record!",
       });
     }
 
@@ -1119,7 +1111,8 @@ const deleteFinance = async (req, res) => {
         .json({ message: "Finance successfully deleted" });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or Staffs can create a livestock.",
+        message:
+          "Only farmLand Admin or Staffs can create, view and modify Finance record!",
       });
     }
 
@@ -1247,12 +1240,27 @@ const getAllFinances = async (req, res) => {
         financeType
       );
 
+      const expenseModel = getFinanceModel(
+        farmlandId,
+        livestockType,
+        "expense"
+      );
+      const incomeModel = getFinanceModel(farmlandId, livestockType, "income");
+
+      const expenseTotal = await expenseModel.find();
+      const incomeTotal = await incomeModel.find();
+      const incomeLength = incomeTotal.length;
+      const expenseLength = expenseTotal.length;
+
       const allFinance = await FinanceModel.find();
 
-      return res.status(StatusCodes.OK).json({ message: allFinance });
+      return res
+        .status(StatusCodes.OK)
+        .json({ message: { incomeLength, expenseLength, allFinance } });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or Staffs can create a livestock.",
+        message:
+          "Only farmLand Admin or Staffs can create, view and modify Finance record!",
       });
     }
 
@@ -1341,7 +1349,7 @@ const createEvent = async (req, res) => {
         .json({ message: "Livestock created successfully" });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or Staffs can create a livestock.",
+        message: "Only farmLand Admin or Staffs can create an event.",
       });
     }
 
@@ -2441,7 +2449,7 @@ const getAllModuleCounts = async (req, res) => {
 
     if (!isStaffOrAdmin) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only farmLand Admin or Staffs can access this data.",
+        message: "Only farmLand's Admin or Staff can access this Farmland.",
       });
     }
 
