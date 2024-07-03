@@ -840,6 +840,60 @@ const getAllQuarantine = async (req, res) => {
   }
 };
 
+const getAQuarantine = async (req, res) => {
+  const { farmlandId, livestockType, livestockId } = req.params;
+
+  try {
+    // Fetch farmland
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "FarmLand not found" });
+    }
+
+    if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Invalid livestock type" });
+    }
+
+    const requester = req.user;
+    const farmalndAdmin = farmlandInDb.admin;
+
+    // Check if admin or workers are allowed into the farmland
+    const isStaffOrAdmin =
+      mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id) ||
+      farmlandInDb.staffs.includes(requester.id);
+
+    if (!isStaffOrAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "You do not have permission to access this farmland",
+      });
+    }
+
+    // fetch livstock model
+    const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
+
+    // Fetch livestock
+    const fetchedLivestock = await quarantineModel.findOne({
+      tagId: livestockId,
+    });
+
+    if (!fetchedLivestock) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: "Livestock not found",
+      });
+    }
+
+    res.status(StatusCodes.CREATED).json({ message: fetchedLivestock });
+  } catch (error) {
+    console.log(error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
+  }
+};
+
 // Finance routes
 // create finance
 
@@ -1981,7 +2035,7 @@ const getLactation = async (req, res) => {
         message: "Lactation record not found",
       });
     }
-
+    console.log(fetchedlactation);
     return res.status(StatusCodes.OK).json({ message: fetchedlactation });
   } catch (error) {
     console.error("Error fetching livestock:", error); // Log the error for debugging
@@ -2541,6 +2595,7 @@ module.exports = {
   getAllLivestocks,
   quarantine,
   getAllQuarantine,
+  getAQuarantine,
 
   // Finance
   createFinance,

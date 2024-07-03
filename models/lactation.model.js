@@ -54,8 +54,12 @@ const lactatingLivestockSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    inCharge: {
+      type: "string",
+      require: true,
+    },
   },
   { timestamps: true }
 );
 
-module.exports = lactatingLivestockSchema 
+module.exports = lactatingLivestockSchema;
