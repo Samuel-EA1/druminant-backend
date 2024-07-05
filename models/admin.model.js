@@ -66,7 +66,7 @@ AdminSchema.methods.createJwt = function () {
       isAdmin: this.isAdmin,
       username: this.username,
       farmland: this.farmland,
-      
+      status: "",
     },
     process.env.JWT_SECRET,
     {

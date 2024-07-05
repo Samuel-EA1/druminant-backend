@@ -10,7 +10,11 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swaggerUi.json");
 
 const corsOptions = {
-  origin: ["http://localhost:3000","http://192.168.100.69:3000", "https://druminant.vercel.app"],
+  origin: [
+    "http://localhost:3000",
+    "http://192.168.100.69:3000",
+    "https://druminant.vercel.app",
+  ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,
@@ -33,9 +37,9 @@ const connectDb = require("./db/connect");
 // routes
 
 const farmLandRoutes = require("./routes/farmLand.routes/index");
-
 const profileRoutes = require("./routes/profile");
 const authRoutes = require("./routes/auth.routes/index");
+const refreshToken = require("./routes/refreshToken.routes/index");
 
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
@@ -48,6 +52,7 @@ app.use(express.json());
 
 // routes
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1", authMiddleware, refreshToken);
 app.use("/api/v1/farmland", authMiddleware, farmLandRoutes);
 app.use("/api/v1/profile", authMiddleware, profileRoutes);
 

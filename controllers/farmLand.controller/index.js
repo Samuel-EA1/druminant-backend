@@ -128,6 +128,104 @@ const processFarmlandRequest = async (req, res) => {
   }
 };
 
+const sentRequest = async (req, res) => {
+  const { farmlandId, username } = req.params;
+  const { status } = req.body;
+
+  try {
+    if (!isAdmin) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({
+        message: "Only the farmland admin is allowed to process this request",
+      });
+    }
+
+    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+
+    if (!farmlandInDb) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Farmland not found" });
+    }
+
+    // Fetch staff
+    const staff = await staffModel.findOne({ username: staffId });
+
+    if (!staff) {
+      return res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ message: "Staff not found" });
+    }
+
+    const isStaffRequested = farmlandInDb.requests.includes(staff._id);
+    const isStaffAccepted = farmlandInDb.staffs.includes(staff._id);
+    const isStaffRejected = farmlandInDb.rejected.includes(staff._id);
+
+    // Update staff status and handle validation
+    try {
+      staff.status = status;
+    } catch (validationError) {
+      if (validationError.errors && validationError.errors["status"]) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: validationError.errors["status"].message });
+      }
+      throw validationError; // rethrow if it's an unexpected error
+    }
+
+    // Update farmland request and staff array
+    if (!["Accept", "Reject"].includes(status)) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Provided status is not recorganized" });
+    }
+
+    if (status === "Accept" && (isStaffRequested || isStaffRejected)) {
+      farmlandInDb.requests = farmlandInDb.requests.filter(
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
+      );
+
+      farmlandInDb.rejected = farmlandInDb.rejected.filter(
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
+      );
+      // push staff id to the staffs array
+      !farmlandInDb.staffs.includes(staff._id) &&
+        farmlandInDb.staffs.push(staff._id);
+
+      //  update staff farmalnd in profile
+      staff.staffAt = farmlandId;
+    } else if (status === "Reject" && (isStaffAccepted || isStaffRequested)) {
+      farmlandInDb.staffs = farmlandInDb.staffs.filter(
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
+      );
+      farmlandInDb.requests = farmlandInDb.requests.filter(
+        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
+      );
+      !farmlandInDb.rejected.includes(staff._id) &&
+        farmlandInDb.rejected.push(staff._id);
+
+      staff.staffAt = "";
+    } else if (
+      (status === "Reject" || status === "Accept") &&
+      (isStaffAccepted || isStaffRejected)
+    ) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(`Staff is already ${status}ed`);
+    }
+    await staff.save();
+    await farmlandInDb.save();
+
+    return res.status(StatusCodes.CREATED).json({
+      message: ` Staff successfully ${status}ed`,
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ message: "An error occurred" });
+  }
+};
+
 // get staffs
 const getFarmlandStaffs = async (req, res) => {
   const { farmlandId } = req.params;
@@ -2625,4 +2723,5 @@ module.exports = {
 
   // module entries count
   getAllModuleCounts,
+  sentRequest,
 };

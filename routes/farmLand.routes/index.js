@@ -35,6 +35,7 @@ const {
   getPregnancy,
   getAllPregnancies,
   getAllModuleCounts,
+  sentRequest,
 } = require("../../controllers/farmLand.controller");
 
 // get a farmland
@@ -53,6 +54,7 @@ router
 
 // farmland requests
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
+router.post("/:farmlandId/staff/:staffId/request", sentRequest);
 router.get("/:farmlandId/requests/accepted", getFarmlandStaffs);
 router.get("/:farmlandId/requests/pending", getFarmlandrequests);
 
