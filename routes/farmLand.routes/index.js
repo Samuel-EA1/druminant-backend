@@ -54,7 +54,7 @@ router
 
 // farmland requests
 router.post("/:farmlandId/staff/:staffId/process", processFarmlandRequest);
-router.post("/:farmlandId/staff/:staffId/request", sentRequest);
+router.post("/request", sentRequest);
 router.get("/:farmlandId/requests/accepted", getFarmlandStaffs);
 router.get("/:farmlandId/requests/pending", getFarmlandrequests);
 

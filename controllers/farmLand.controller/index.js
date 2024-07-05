@@ -1,6 +1,8 @@
 const farmLandModel = require("../../models/farmland.model");
 const { StatusCodes } = require("http-status-codes");
 const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+
 const farmlandModel = require("../../models/farmland.model");
 const staffModel = require("../../models/staff.model");
 const adminModel = require("../../models/admin.model");
@@ -129,17 +131,10 @@ const processFarmlandRequest = async (req, res) => {
 };
 
 const sentRequest = async (req, res) => {
-  const { farmlandId, username } = req.params;
-  const { status } = req.body;
+  const { farmland } = req.body;
 
   try {
-    if (!isAdmin) {
-      return res.status(StatusCodes.UNAUTHORIZED).json({
-        message: "Only the farmland admin is allowed to process this request",
-      });
-    }
-
-    const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
+    const farmlandInDb = await farmlandModel.findOne({ farmland });
 
     if (!farmlandInDb) {
       return res
@@ -147,76 +142,32 @@ const sentRequest = async (req, res) => {
         .json({ message: "Farmland not found" });
     }
 
+    const token = req.headers.authorization.split(" ")[1];
+
+    // Verify and decode
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     // Fetch staff
-    const staff = await staffModel.findOne({ username: staffId });
+    const staff = await staffModel.findOne({ _id: decoded.id });
 
     if (!staff) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ message: "Staff not found" });
     }
-
-    const isStaffRequested = farmlandInDb.requests.includes(staff._id);
-    const isStaffAccepted = farmlandInDb.staffs.includes(staff._id);
-    const isStaffRejected = farmlandInDb.rejected.includes(staff._id);
-
-    // Update staff status and handle validation
-    try {
-      staff.status = status;
-    } catch (validationError) {
-      if (validationError.errors && validationError.errors["status"]) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: validationError.errors["status"].message });
-      }
-      throw validationError; // rethrow if it's an unexpected error
-    }
-
-    // Update farmland request and staff array
-    if (!["Accept", "Reject"].includes(status)) {
+   console.log(decoded,staff,farmlandInDb)
+    if (staff.status !== "Reject") {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ message: "Provided status is not recorganized" });
+        .json({ message: "Your request must have been reject to proceed!" });
     }
 
-    if (status === "Accept" && (isStaffRequested || isStaffRejected)) {
-      farmlandInDb.requests = farmlandInDb.requests.filter(
-        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
-      );
-
-      farmlandInDb.rejected = farmlandInDb.rejected.filter(
-        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
-      );
-      // push staff id to the staffs array
-      !farmlandInDb.staffs.includes(staff._id) &&
-        farmlandInDb.staffs.push(staff._id);
-
-      //  update staff farmalnd in profile
-      staff.staffAt = farmlandId;
-    } else if (status === "Reject" && (isStaffAccepted || isStaffRequested)) {
-      farmlandInDb.staffs = farmlandInDb.staffs.filter(
-        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
-      );
-      farmlandInDb.requests = farmlandInDb.requests.filter(
-        (reqId) => !mongoose.Types.ObjectId(reqId).equals(staff._id)
-      );
-      !farmlandInDb.rejected.includes(staff._id) &&
-        farmlandInDb.rejected.push(staff._id);
-
-      staff.staffAt = "";
-    } else if (
-      (status === "Reject" || status === "Accept") &&
-      (isStaffAccepted || isStaffRejected)
-    ) {
-      return res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(`Staff is already ${status}ed`);
-    }
+    const sent = farmlandInDb.requests.push(staff.id);
+    staff.status = "Pending";
     await staff.save();
     await farmlandInDb.save();
 
     return res.status(StatusCodes.CREATED).json({
-      message: ` Staff successfully ${status}ed`,
+      message: ` Request successfully sent`,
     });
   } catch (error) {
     console.error(error);
