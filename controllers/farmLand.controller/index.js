@@ -154,7 +154,7 @@ const sentRequest = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ message: "Staff not found" });
     }
-   console.log(decoded,staff,farmlandInDb)
+    console.log(decoded, staff, farmlandInDb);
     if (staff.status !== "Reject") {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -1350,16 +1350,32 @@ const getAllFinances = async (req, res) => {
       );
       const incomeModel = getFinanceModel(farmlandId, livestockType, "income");
 
-      const expenseTotal = await expenseModel.find();
-      const incomeTotal = await incomeModel.find();
-      const incomeLength = incomeTotal.length;
-      const expenseLength = expenseTotal.length;
+      const expenseData = await expenseModel.find();
+      const incomeData = await incomeModel.find();
+      const incomeLength = incomeData.length;
+      const expenseLength = expenseData.length;
+      const incomeAmount = incomeData.reduce(
+        (total, entry) => total + entry.amount,
+        0
+      );
+      const incomeAmountTotal = incomeAmount.toFixed(2);
+      const expenseAmount = expenseData.reduce(
+        (total, entry) => total + entry.amount,
+        0
+      );
+      const expenseAmountTotal = expenseAmount.toFixed(2);
 
       const allFinance = await FinanceModel.find();
 
-      return res
-        .status(StatusCodes.OK)
-        .json({ message: { incomeLength, expenseLength, allFinance } });
+      return res.status(StatusCodes.OK).json({
+        message: {
+          incomeAmountTotal,
+          expenseAmountTotal,
+          incomeLength,
+          expenseLength,
+          allFinance,
+        },
+      });
     } else {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         message:
