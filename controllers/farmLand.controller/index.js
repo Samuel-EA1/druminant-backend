@@ -314,10 +314,26 @@ const createLivestock = async (req, res) => {
 
     if (isStaffOrAdmin) {
       // Get the livestock model for this farmland
-      const livestock = getLivestockModel(farmlandId, livestockType);
+      const livestockModel = getLivestockModel(farmlandId, livestockType);
+      const quarantineModel = getQuarantinedModel(farmlandId, livestockType);
+
+      if (tagId && tagId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "TagId Entry ID should not contain spaces." });
+      }
+
+      const existingQuarantineStock = await quarantineModel.findOne({ tagId });
+
+      if (existingQuarantineStock) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message:
+            "There is already an existing livestock with this ID quarantined.",
+        });
+      }
 
       // Check for duplicate tagId within the same farmland collection
-      const existingLivestock = await livestock.findOne({
+      const existingLivestock = await livestockModel.findOne({
         tagId,
       });
       if (existingLivestock) {
@@ -344,7 +360,7 @@ const createLivestock = async (req, res) => {
         remark: remark,
       };
 
-      await livestock.create(newLivestock);
+      await livestockModel.create(newLivestock);
 
       return res
         .status(StatusCodes.CREATED)
@@ -487,6 +503,12 @@ const updateLivestock = async (req, res) => {
         return res
           .status(StatusCodes.BAD_REQUEST)
           .json({ message: "The origin provided is not a valid option" });
+      }
+
+      if (tagId && tagId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "TagId Entry ID should not contain spaces." });
       }
 
       if (breed !== undefined) updateFields["breed"] = breed;
@@ -999,6 +1021,12 @@ const createFinance = async (req, res) => {
         financeType
       );
 
+      if (financeEntryId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Finance Entry ID should not contain spaces." });
+      }
+
       // Check for duplicate financeId within the same farmland collection
       const existingFinance = await financeModel.findOne({
         financeEntryId,
@@ -1103,6 +1131,12 @@ const updateFinance = async (req, res) => {
         return res.status(StatusCodes.NOT_FOUND).json({
           message: `${financeType} not found`,
         });
+      }
+
+      if (financeEntryId && financeEntryId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Finance Entry ID should not contain spaces." });
       }
 
       if (desc !== undefined) updateFields["desc"] = desc;
@@ -1434,6 +1468,12 @@ const createEvent = async (req, res) => {
       // Get the event model for this farmland
       const eventCollection = getEventModel(farmlandId, livestockType);
 
+      if (eventEntryId && eventEntryId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Event Entry ID should not contain spaces." });
+      }
+
       // Check for duplicate eventEntryId within the same farmland,livestock collection
       const existingEvent = await eventCollection.findOne({
         eventEntryId,
@@ -1534,6 +1574,11 @@ const updateEvent = async (req, res) => {
       fetchedEvent.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
+      if (eventEntryId && eventEntryId.includes(" ")) {
+        return res
+          .status(StatusCodes.BAD_REQUEST)
+          .json({ message: "Event Entry ID should not contain spaces." });
+      }
       const updateFields = {};
       if (eventEntryId !== undefined)
         updateFields["eventEntryId"] = eventEntryId;
@@ -1814,6 +1859,11 @@ const createLactation = async (req, res) => {
       // Get the livestock model for this farmland
       const lactationCollection = getLactationModel(farmlandId, livestockType);
 
+      if (entryLactationId && entryLactationId.includes(" ")) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "LactationId  should not contain spaces.",
+        });
+      }
       // Check for duplicate tagId within the same farmland collection
       const existingLivestock = await lactationCollection.findOne({
         entryLactationId,
@@ -1931,6 +1981,12 @@ const updateLactation = async (req, res) => {
       fetchedlactation.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
+      if (entryLactationId && entryLactationId.includes(" ")) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "LactationId  should not contain spaces.",
+        });
+      }
+
       const updateFields = {};
 
       if (entryLactationId !== undefined)
@@ -2212,6 +2268,12 @@ const createPregnancy = async (req, res) => {
       // Get the pregnancy model for this farmland
       const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
 
+      if (entryPregnancyId && entryPregnancyId.includes(" ")) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "PregnancyId  should not contain spaces.",
+        });
+      }
+
       // Check for duplicate Id within the same farmland collection
       const existingPregnancy = await pregnancyCollection.findOne({
         entryPregnancyId,
@@ -2330,6 +2392,12 @@ const updatePregnancy = async (req, res) => {
       fetchedPregnantLivestock.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
+      if (entryPregnancyId && entryPregnancyId.includes(" ")) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "PregnancyId  should not contain spaces.",
+        });
+      }
+
       const updateFields = {};
 
       if (entryPregnancyId !== undefined)
