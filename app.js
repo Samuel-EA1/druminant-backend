@@ -52,9 +52,9 @@ app.use(express.json());
 
 // routes
 app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1", authMiddleware, refreshToken);
+app.use("/api/v1/auth", authMiddleware, refreshToken);
 app.use("/api/v1/farmland", authMiddleware, farmLandRoutes);
-app.use("/api/v1/profile", authMiddleware, profileRoutes);
+app.use("/api/v1/profile", profileRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.get("/", (req, res) => {

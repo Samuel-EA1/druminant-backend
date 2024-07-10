@@ -7,6 +7,8 @@ const refreshToken = async (req, res) => {
     const oldToken = req.headers.authorization.split(" ")[1];
     // Verify and decode the old token
     const decoded = jwt.verify(oldToken, process.env.JWT_SECRET);
+
+    console.log(decoded);
     // Fetch the latest status of the staff from the database
     const staff = await staffModel.findById({ _id: decoded.id });
     if (!staff) {
@@ -20,7 +22,7 @@ const refreshToken = async (req, res) => {
     // Issue a new token with the updated status
     const newToken = jwt.sign(
       {
-        staffId: decoded.id,
+        id: decoded.id,
         isAdmin: decoded.isAdmin,
         username: decoded.username,
         farmland: decoded.farmland,

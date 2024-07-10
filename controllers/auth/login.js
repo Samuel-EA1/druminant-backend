@@ -51,7 +51,7 @@ const login = async (req, res) => {
     const token = user.createJwt();
 
     console.log(user)
-
+ 
     res.status(StatusCodes.OK).json({
       isAdmin,
       username: user.username,

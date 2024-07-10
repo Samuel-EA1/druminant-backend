@@ -89,7 +89,6 @@ const editProfile = async (req, res) => {
 //  edit admin/staff profile
 const getProfile = async (req, res) => {
   const { userId } = req.params;
-  const requester = req.user;
 
   try {
     let user;
@@ -105,13 +104,6 @@ const getProfile = async (req, res) => {
           .json({ message: "User not found" });
       }
       isAdmin = true;
-    }
-
-    // check if caller is allowed to make the request
-    if (!mongoose.Types.ObjectId(requester.id).equals(user._id)) {
-      return res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json({ message: "Please login into your account to proceed" });
     }
 
     res.status(StatusCodes.OK).json({
