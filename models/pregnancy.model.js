@@ -7,7 +7,7 @@ const pregnancySchema = new Schema({
     type: String,
     required: true,
   },
-  entryPregnancyId: {
+  tagId: {
     type: String,
     required: true,
   },

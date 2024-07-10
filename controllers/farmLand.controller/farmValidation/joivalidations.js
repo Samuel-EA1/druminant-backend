@@ -26,7 +26,7 @@ const joiLivestockSchema = Joi.object({
 
 // finance
 const joiFinanceSchema = Joi.object({
-  financeEntryId: Joi.string().trim().regex(/^\S+$/).required(),
+
   paymentmethod: Joi.string().valid("Cash", "Cheque", "Transfer").required(),
   desc: Joi.string().allow("").optional(),
   transactionDate: Joi.date().required(),
@@ -36,7 +36,7 @@ const joiFinanceSchema = Joi.object({
 // events
 
 const joiEventSchema = Joi.object({
-  eventEntryId: Joi.string().trim().regex(/^\S+$/).required(),
+  tagId: Joi.string().trim().regex(/^\S+$/).required(),
   remark: Joi.string().allow("").optional(),
   eventType: Joi.string().required(),
   eventDate: Joi.date().required(),

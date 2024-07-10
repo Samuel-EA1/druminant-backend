@@ -10,11 +10,11 @@ const eventSchema = new mongoose.Schema(
     remark: {
       type: String,
     },
-    eventEntryId: {
+
+    tagId: {
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
     eventType: {
       type: String,

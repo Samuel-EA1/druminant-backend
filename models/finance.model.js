@@ -9,12 +9,7 @@ const financeSchema = new mongoose.Schema(
     desc: {
       type: String,
     },
-    financeEntryId: {
-      type: String,
-      required: true,
-      trim: true,
-      unique: true,
-    },
+ 
 
     paymentmethod: {
       type: String,

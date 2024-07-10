@@ -511,6 +511,21 @@ const updateLivestock = async (req, res) => {
           .json({ message: "TagId Entry ID should not contain spaces." });
       }
 
+      if (
+        !breed ||
+        !birthDate ||
+        !sex ||
+        !tagId ||
+        !tagLocation ||
+        !weight ||
+        !status ||
+        !origin
+      ) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Please, ensure you fill all fields!",
+        });
+      }
+
       if (breed !== undefined) updateFields["breed"] = breed;
       if (birthDate !== undefined) updateFields["birthDate"] = birthDate;
       if (sex !== undefined) updateFields["sex"] = sex;
@@ -1021,22 +1036,22 @@ const createFinance = async (req, res) => {
         financeType
       );
 
-      if (financeEntryId.includes(" ")) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "Finance Entry ID should not contain spaces." });
-      }
+      // if (financeEntryId.includes(" ")) {
+      //   return res
+      //     .status(StatusCodes.BAD_REQUEST)
+      //     .json({ message: "Finance Entry ID should not contain spaces." });
+      // }
 
       // Check for duplicate financeId within the same farmland collection
-      const existingFinance = await financeModel.findOne({
-        financeEntryId,
-      });
-      if (existingFinance) {
-        return res.status(400).json({
-          message:
-            "Finance Id already exists for this farmland and finance type",
-        });
-      }
+      // const existingFinance = await financeModel.findOne({
+      //   financeEntryId,
+      // });
+      // if (existingFinance) {
+      //   return res.status(400).json({
+      //     message:
+      //       "Finance Id already exists for this farmland and finance type",
+      //   });
+      // }
 
       const { username } = requester.isAdmin
         ? await adminModel.findOne({ _id: requester.id })
@@ -1045,7 +1060,6 @@ const createFinance = async (req, res) => {
       // new cattle
       const newFinance = {
         inCharge: username,
-        financeEntryId,
         paymentmethod,
         desc,
         transactionDate: new Date(transactionDate),
@@ -1075,7 +1089,7 @@ const createFinance = async (req, res) => {
 
 // update finance
 const updateFinance = async (req, res) => {
-  const { desc, transactionDate, amount, paymentmethod, financeEntryId } =
+  const { desc, transactionDate, amount, paymentmethod } =
     req.body;
   const { farmlandId, livestockType, financeType, financeId } = req.params;
 
@@ -1124,7 +1138,7 @@ const updateFinance = async (req, res) => {
 
       // Check for duplicate financeId within the same farmland collection
       const existingFinance = await FinanceModel.findOne({
-        financeEntryId: financeId,
+        _id: financeId,
       });
 
       if (!existingFinance) {
@@ -1139,6 +1153,17 @@ const updateFinance = async (req, res) => {
           .json({ message: "Finance Entry ID should not contain spaces." });
       }
 
+      if (
+        !desc ||
+        !transactionDate ||
+        !amount ||
+        !paymentmethod ||
+        !financeEntryId
+      ) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Please, ensure you fill all fields!",
+        });
+      }
       if (desc !== undefined) updateFields["desc"] = desc;
       if (transactionDate !== undefined)
         updateFields["transactionDate"] = transactionDate;
@@ -1149,7 +1174,7 @@ const updateFinance = async (req, res) => {
         updateFields["paymentmethod"] = paymentmethod;
 
       const updated = await FinanceModel.findOneAndUpdate(
-        { financeEntryId: financeId },
+        { _id: financeId },
         { $set: updateFields },
         { new: true }
       );
@@ -1222,7 +1247,7 @@ const deleteFinance = async (req, res) => {
       // Check for duplicate financeId within the same farmland collection
 
       const existingFinance = await FinanceModel.findOne({
-        financeEntryId: financeId,
+        _id: financeId,
       });
 
       if (!existingFinance) {
@@ -1234,7 +1259,7 @@ const deleteFinance = async (req, res) => {
       // delete document
 
       const deleteentry = await FinanceModel.findOneAndDelete({
-        financeEntryId: financeId,
+        _id: financeId,
       });
 
       if (!deleteentry) {
@@ -1309,7 +1334,7 @@ const getFinance = async (req, res) => {
       // Check for duplicate financeId within the same farmland collection
 
       const existingFinance = await FinanceModel.findOne({
-        financeEntryId: financeId,
+        _id: financeId,
       });
 
       if (!existingFinance) {
@@ -1428,7 +1453,7 @@ const getAllFinances = async (req, res) => {
 
 // livestock
 const createEvent = async (req, res) => {
-  const { eventEntryId, eventType, eventDate, remark } = req.body;
+  const { tagId, eventType, eventDate, remark } = req.body;
   const { farmlandId, livestockType } = req.params;
 
   try {
@@ -1468,21 +1493,21 @@ const createEvent = async (req, res) => {
       // Get the event model for this farmland
       const eventCollection = getEventModel(farmlandId, livestockType);
 
-      if (eventEntryId && eventEntryId.includes(" ")) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "Event Entry ID should not contain spaces." });
-      }
+      // if (eventEntryId && eventEntryId.includes(" ")) {
+      //   return res
+      //     .status(StatusCodes.BAD_REQUEST)
+      //     .json({ message: "Event Entry ID should not contain spaces." });
+      // }
 
       // Check for duplicate eventEntryId within the same farmland,livestock collection
-      const existingEvent = await eventCollection.findOne({
-        eventEntryId,
-      });
-      if (existingEvent) {
-        return res
-          .status(400)
-          .json({ message: "Event Id already exists for this livestock type" });
-      }
+      // const existingEvent = await eventCollection.findOne({
+      //   eventEntryId,
+      // });
+      // if (existingEvent) {
+      //   return res
+      //     .status(400)
+      //     .json({ message: "Event Id already exists for this livestock type" });
+      // }
 
       const { username } = requester.isAdmin
         ? await adminModel.findOne({ _id: requester.id })
@@ -1493,15 +1518,15 @@ const createEvent = async (req, res) => {
         inCharge: username,
         eventDate: new Date(eventDate),
         eventType,
-        eventEntryId,
+        tagId,
         remark,
       };
 
-      console.log(newEvent);
+    
 
-      const newLivestock = await eventCollection.create(newEvent);
+    await eventCollection.create(newEvent);
 
-      console.log(newLivestock);
+      
 
       return res
         .status(StatusCodes.CREATED)
@@ -1522,7 +1547,7 @@ const createEvent = async (req, res) => {
 // update livestock data
 
 const updateEvent = async (req, res) => {
-  const { eventEntryId, eventType, eventDate, remark } = req.body;
+  const { tagId, eventType, eventDate, remark } = req.body;
   const { farmlandId, livestockType, eventId } = req.params;
 
   try {
@@ -1558,10 +1583,10 @@ const updateEvent = async (req, res) => {
 
     // Fetch event
     const fetchedEvent = await eventCollection.findOne({
-      eventEntryId: eventId,
+      _id: eventId,
     });
 
-    console.log(fetchedEvent);
+ 
 
     if (!fetchedEvent) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -1574,20 +1599,27 @@ const updateEvent = async (req, res) => {
       fetchedEvent.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
-      if (eventEntryId && eventEntryId.includes(" ")) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "Event Entry ID should not contain spaces." });
+      // if (eventEntryId && eventEntryId.includes(" ")) {
+      //   return res
+      //     .status(StatusCodes.BAD_REQUEST)
+      //     .json({ message: "Event Entry ID should not contain spaces." });
+      // }
+
+      if (!tagId || !eventType || !eventDate) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Please, ensure you fill all fields!",
+        });
       }
+
       const updateFields = {};
-      if (eventEntryId !== undefined)
-        updateFields["eventEntryId"] = eventEntryId;
+      if (tagId !== undefined)
+        updateFields["tagId"] = tagId;
       if (eventType !== undefined) updateFields["eventType"] = eventType;
       if (eventDate !== undefined) updateFields["eventDate"] = eventDate;
       if (remark !== undefined) updateFields["remark"] = remark;
 
       const updated = await eventCollection.findOneAndUpdate(
-        { eventEntryId: eventId },
+        { _id: eventId },
         { $set: updateFields },
         { new: true }
       );
@@ -1652,7 +1684,7 @@ const deleteEvent = async (req, res) => {
 
     // Fetch livestock
     const fetchedEvent = await eventCollection.findOne({
-      eventEntryId: eventId,
+      _id: eventId,
     });
 
     if (!fetchedEvent) {
@@ -1667,10 +1699,10 @@ const deleteEvent = async (req, res) => {
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
       const deleteEntry = await eventCollection.findOneAndDelete({
-        eventEntryId: eventId,
+        _id: eventId,
       });
 
-      console.log(deleteEntry);
+     
 
       if (!deleteEntry) {
         return res
@@ -1733,7 +1765,7 @@ const getEvent = async (req, res) => {
 
     // Fetch event
     const fetchedEvent = await eventCollection.findOne({
-      eventEntryId: eventId,
+      _id: eventId,
     });
 
     if (!fetchedEvent) {
@@ -1752,7 +1784,7 @@ const getEvent = async (req, res) => {
 };
 
 const getAllEvents = async (req, res) => {
-  const { farmlandId, livestockType, eventId } = req.params;
+  const { farmlandId, livestockType } = req.params;
 
   // Fetch farmland
   const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
@@ -1987,6 +2019,24 @@ const updateLactation = async (req, res) => {
         });
       }
 
+      if (
+        !entryLactationId ||
+        !milkYield ||
+        !deliveryDate ||
+        !weight ||
+        !offspringNumber ||
+        !fat ||
+        !snf ||
+        !lactose ||
+        !salt ||
+        !protein ||
+        !water
+      ) {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          message: "Please, ensure you fill all fields!",
+        });
+      }
+
       const updateFields = {};
 
       if (entryLactationId !== undefined)
@@ -2216,7 +2266,7 @@ const getAllLactations = async (req, res) => {
 const createPregnancy = async (req, res) => {
   const {
     breed,
-    entryPregnancyId,
+    tagId,
     status,
     breedingDate,
     gestationPeriod,
@@ -2268,19 +2318,19 @@ const createPregnancy = async (req, res) => {
       // Get the pregnancy model for this farmland
       const pregnancyCollection = getPregnancyModel(farmlandId, livestockType);
 
-      if (entryPregnancyId && entryPregnancyId.includes(" ")) {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "PregnancyId  should not contain spaces.",
-        });
-      }
+      // if (tagId && tagId.includes(" ")) {
+      //   return res.status(StatusCodes.BAD_REQUEST).json({
+      //     message: "PregnancyId  should not contain spaces.",
+      //   });
+      // }
 
       // Check for duplicate Id within the same farmland collection
       const existingPregnancy = await pregnancyCollection.findOne({
-        entryPregnancyId,
+        tagId,
       });
       if (existingPregnancy) {
         return res.status(400).json({
-          message: "pregnancy Id already exists for this livestock type",
+          message: "Tag Id already exists for this livestock type",
         });
       }
 
@@ -2292,7 +2342,7 @@ const createPregnancy = async (req, res) => {
       const newLactation = {
         inCharge: username,
         breed,
-        entryPregnancyId,
+        tagId,
         status,
         breedingDate: new Date(breedingDate),
         gestationPeriod,
@@ -2322,7 +2372,7 @@ const createPregnancy = async (req, res) => {
 const updatePregnancy = async (req, res) => {
   const {
     breed,
-    entryPregnancyId,
+   tagId,
     status,
     breedingDate,
     gestationPeriod,
@@ -2378,7 +2428,7 @@ const updatePregnancy = async (req, res) => {
     // Fetch pregnant livestock
 
     const fetchedPregnantLivestock = await pregnancyCollection.findOne({
-      entryPregnancyId: pregnancyId,
+      _id: pregnancyId,
     });
 
     if (!fetchedPregnantLivestock) {
@@ -2392,16 +2442,28 @@ const updatePregnancy = async (req, res) => {
       fetchedPregnantLivestock.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
-      if (entryPregnancyId && entryPregnancyId.includes(" ")) {
+      // if (tagId && tagId.includes(" ")) {
+      //   return res.status(StatusCodes.BAD_REQUEST).json({
+      //     message: "PregnancyId  should not contain spaces.",
+      //   });
+      // }
+
+      if (
+        !breed ||
+        !tagId ||
+        !status ||
+        !breedingDate ||
+        !gestationPeriod
+      ) {
         return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "PregnancyId  should not contain spaces.",
+          message: "Please, ensure you fill all fields!",
         });
       }
 
       const updateFields = {};
 
-      if (entryPregnancyId !== undefined)
-        updateFields["entryPregnancyId"] = entryPregnancyId;
+      if (tagId !== undefined)
+        updateFields["tagId"] = tagId;
       if (breed !== undefined) updateFields["breed"] = breed;
       if (status !== undefined) updateFields["status"] = status;
       if (breedingDate !== undefined)
@@ -2468,7 +2530,7 @@ const deletePregnancy = async (req, res) => {
     // Fetch pregnant livestock
 
     const fetchedPregnantLivestock = await pregnancyCollection.findOne({
-      entryPregnancyId: pregnancyId,
+      _id: pregnancyId,
     });
 
     if (!fetchedPregnantLivestock) {
@@ -2483,7 +2545,7 @@ const deletePregnancy = async (req, res) => {
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
       const deleteentry = await pregnancyCollection.findOneAndDelete({
-        entryPregnancyId: pregnancyId,
+        _id: pregnancyId,
       });
 
       if (!deleteentry) {
@@ -2547,7 +2609,7 @@ const getPregnancy = async (req, res) => {
     // Fetch pregnant livestock
 
     const fetchedPregnantLivestock = await pregnancyCollection.findOne({
-      entryPregnancyId: pregnancyId,
+      _id: pregnancyId,
     });
 
     if (!fetchedPregnantLivestock) {
