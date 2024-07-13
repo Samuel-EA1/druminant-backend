@@ -105,6 +105,7 @@ const getProfile = async (req, res) => {
       }
       isAdmin = true;
     }
+    console.log(user);
 
     res.status(StatusCodes.OK).json({
       message: {
@@ -112,7 +113,7 @@ const getProfile = async (req, res) => {
         isAdmin: user.isAdmin,
         username: user.username,
         email: user.email,
-        staffAt: user.staffAt,
+        farmland: user.farmland,
         status: user.status,
       },
     });

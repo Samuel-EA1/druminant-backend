@@ -9,8 +9,6 @@ const financeSchema = new mongoose.Schema(
     desc: {
       type: String,
     },
- 
-
     paymentmethod: {
       type: String,
       enum: ["Cash", "Cheque", "Transfer"],

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 // Define the combined lactating livestock schema with milk composition
 const lactatingLivestockSchema = new mongoose.Schema(
   {
-    entryLactationId: {
+    tagId: {
       type: String,
       required: true,
       trim: true,
@@ -36,7 +36,7 @@ const lactatingLivestockSchema = new mongoose.Schema(
     },
     snf: {
       type: Number,
-      required: true, // Solid Not Fat
+      required: true, 
     },
     lactose: {
       type: Number,

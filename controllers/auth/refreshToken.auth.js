@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
 const staffModel = require("../../models/staff.model");
+const adminModel = require("../../models/admin.model");
 
 const refreshToken = async (req, res) => {
   try {
@@ -8,31 +9,33 @@ const refreshToken = async (req, res) => {
     // Verify and decode the old token
     const decoded = jwt.verify(oldToken, process.env.JWT_SECRET);
 
-    console.log(decoded);
     // Fetch the latest status of the staff from the database
-    const staff = await staffModel.findById({ _id: decoded.id });
-    if (!staff) {
+    const user =
+      (await staffModel.findById({ _id: decoded.id })) ||
+      (await adminModel.findById({ _id: decoded.id }));
+
+    if (!user) {
       return res
         .status(StatusCodes.NOT_FOUND)
         .json({ message: "Staff not found" });
     }
 
-    const newStatus = staff.status;
-
     // Issue a new token with the updated status
     const newToken = jwt.sign(
       {
-        id: decoded.id,
-        isAdmin: decoded.isAdmin,
-        username: decoded.username,
-        farmland: decoded.farmland,
-        status: newStatus,
+        id: user.id,
+        isAdmin: user.isAdmin,
+        username: user.username,
+        farmland: user.farmland,
+        status: user.status,
       },
       process.env.JWT_SECRET,
       {
         expiresIn: process.env.JWT_LIFETIME,
       }
     );
+
+    console.log(newToken);
 
     res.status(StatusCodes.OK).json({ message: newToken });
   } catch (error) {

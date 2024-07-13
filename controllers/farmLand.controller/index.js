@@ -1089,8 +1089,7 @@ const createFinance = async (req, res) => {
 
 // update finance
 const updateFinance = async (req, res) => {
-  const { desc, transactionDate, amount, paymentmethod } =
-    req.body;
+  const { desc, transactionDate, amount, paymentmethod } = req.body;
   const { farmlandId, livestockType, financeType, financeId } = req.params;
 
   try {
@@ -1147,19 +1146,13 @@ const updateFinance = async (req, res) => {
         });
       }
 
-      if (financeEntryId && financeEntryId.includes(" ")) {
-        return res
-          .status(StatusCodes.BAD_REQUEST)
-          .json({ message: "Finance Entry ID should not contain spaces." });
-      }
+      // if (financeEntryId && financeEntryId.includes(" ")) {
+      //   return res
+      //     .status(StatusCodes.BAD_REQUEST)
+      //     .json({ message: "Finance Entry ID should not contain spaces." });
+      // }
 
-      if (
-        !desc ||
-        !transactionDate ||
-        !amount ||
-        !paymentmethod ||
-        !financeEntryId
-      ) {
+      if (!desc || !transactionDate || !amount || !paymentmethod) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please, ensure you fill all fields!",
         });
@@ -1168,8 +1161,6 @@ const updateFinance = async (req, res) => {
       if (transactionDate !== undefined)
         updateFields["transactionDate"] = transactionDate;
       if (amount !== undefined) updateFields["amount"] = amount;
-      if (financeEntryId !== undefined)
-        updateFields["financeEntryId"] = financeEntryId;
       if (paymentmethod !== undefined)
         updateFields["paymentmethod"] = paymentmethod;
 
@@ -1194,7 +1185,7 @@ const updateFinance = async (req, res) => {
 
     //
   } catch (error) {
-    console.log(error);
+    console.log(error.MongoError);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
   }
 };
@@ -1522,11 +1513,7 @@ const createEvent = async (req, res) => {
         remark,
       };
 
-    
-
-    await eventCollection.create(newEvent);
-
-      
+      await eventCollection.create(newEvent);
 
       return res
         .status(StatusCodes.CREATED)
@@ -1586,8 +1573,6 @@ const updateEvent = async (req, res) => {
       _id: eventId,
     });
 
- 
-
     if (!fetchedEvent) {
       return res.status(StatusCodes.NOT_FOUND).json({
         message: "Event not found",
@@ -1612,8 +1597,7 @@ const updateEvent = async (req, res) => {
       }
 
       const updateFields = {};
-      if (tagId !== undefined)
-        updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId;
       if (eventType !== undefined) updateFields["eventType"] = eventType;
       if (eventDate !== undefined) updateFields["eventDate"] = eventDate;
       if (remark !== undefined) updateFields["remark"] = remark;
@@ -1701,8 +1685,6 @@ const deleteEvent = async (req, res) => {
       const deleteEntry = await eventCollection.findOneAndDelete({
         _id: eventId,
       });
-
-     
 
       if (!deleteEntry) {
         return res
@@ -1839,7 +1821,7 @@ const getAllEvents = async (req, res) => {
 // lactation
 const createLactation = async (req, res) => {
   const {
-    entryLactationId,
+    tagId,
     milkYield,
     deliveryDate,
     weight,
@@ -1891,18 +1873,19 @@ const createLactation = async (req, res) => {
       // Get the livestock model for this farmland
       const lactationCollection = getLactationModel(farmlandId, livestockType);
 
-      if (entryLactationId && entryLactationId.includes(" ")) {
+      if (tagId && tagId.includes(" ")) {
         return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "LactationId  should not contain spaces.",
+          message: "Tag Id  should not contain spaces.",
         });
       }
       // Check for duplicate tagId within the same farmland collection
       const existingLivestock = await lactationCollection.findOne({
-        entryLactationId,
+        tagId,
       });
+
       if (existingLivestock) {
         return res.status(400).json({
-          message: "lactation Id already exists for this livestock type",
+          message: "Tag Id already exists for this lactation profile",
         });
       }
 
@@ -1913,7 +1896,7 @@ const createLactation = async (req, res) => {
       // new Livestock
       const newLactation = {
         inCharge: username,
-        entryLactationId,
+        tagId,
         milkYield,
         deliveryDate: new Date(deliveryDate),
         weight,
@@ -1929,6 +1912,7 @@ const createLactation = async (req, res) => {
 
       await lactationCollection.create(newLactation);
 
+      console.log("created");
       return res
         .status(StatusCodes.CREATED)
         .json({ message: "lactation created successfully" });
@@ -1941,6 +1925,13 @@ const createLactation = async (req, res) => {
     //
   } catch (error) {
     console.log(error);
+    if (error.code === 11000) {
+      return res.status(StatusCodes.CONFLICT).json({
+        message: "Duplicate TagId",
+      });
+      // Handle duplicate key error
+    }
+
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(error);
   }
 };
@@ -1949,7 +1940,7 @@ const createLactation = async (req, res) => {
 
 const updateLactation = async (req, res) => {
   const {
-    entryLactationId,
+    tagId,
     milkYield,
     deliveryDate,
     weight,
@@ -1968,6 +1959,7 @@ const updateLactation = async (req, res) => {
     // Fetch farmland
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
 
+    console.log(tagId);
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -1997,10 +1989,8 @@ const updateLactation = async (req, res) => {
 
     // Fetch livestock
     const fetchedlactation = await lactationCollection.findOne({
-      entryLactationId: lactationId,
+      _id: lactationId,
     });
-
-    console.log(lactationId, entryLactationId);
 
     if (!fetchedlactation) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -2013,14 +2003,14 @@ const updateLactation = async (req, res) => {
       fetchedlactation.inCharge === requester.username ||
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
-      if (entryLactationId && entryLactationId.includes(" ")) {
+      if (tagId && tagId.includes(" ")) {
         return res.status(StatusCodes.BAD_REQUEST).json({
-          message: "LactationId  should not contain spaces.",
+          message: "Tag Id  should not contain spaces.",
         });
       }
 
       if (
-        !entryLactationId ||
+        !tagId ||
         !milkYield ||
         !deliveryDate ||
         !weight ||
@@ -2037,10 +2027,19 @@ const updateLactation = async (req, res) => {
         });
       }
 
+      // Check for duplicate tagId
+      const existingTagId = await lactationCollection.findOne({ tagId });
+      if (existingTagId && existingTagId._id.toString() !== lactationId) {
+        return res.status(StatusCodes.CONFLICT).json({
+          message: "Duplicate TagId",
+        });
+      }
+
+      console.log({existingTagId})
+
       const updateFields = {};
 
-      if (entryLactationId !== undefined)
-        updateFields["entryLactationId"] = entryLactationId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId;
       if (milkYield !== undefined) updateFields["milkYield"] = milkYield;
       if (deliveryDate !== undefined)
         updateFields["deliveryDate"] = deliveryDate;
@@ -2056,11 +2055,11 @@ const updateLactation = async (req, res) => {
       if (lactose !== undefined) updateFields["lactose"] = lactose;
 
       const updated = await lactationCollection.findOneAndUpdate(
-        { entryLactationId: lactationId },
+        { _id: lactationId },
         { $set: updateFields },
         { new: true }
       );
-
+   
       if (!updated) {
         return res
           .status(StatusCodes.BAD_REQUEST)
@@ -2074,6 +2073,12 @@ const updateLactation = async (req, res) => {
       });
     }
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(StatusCodes.CONFLICT).json({
+        message: "Duplicate TagId",
+      });
+      // Handle duplicate key error
+    }
     console.log(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
   }
@@ -2120,7 +2125,7 @@ const deleteLactation = async (req, res) => {
 
     // Fetch lactation
     const fetchedlactation = await lactationCollection.findOne({
-      entryLactationId: lactationId,
+      _id: lactationId,
     });
 
     if (!fetchedlactation) {
@@ -2135,7 +2140,7 @@ const deleteLactation = async (req, res) => {
       mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
     ) {
       const deleteentry = await lactationCollection.findOneAndDelete({
-        entryLactationId: lactationId,
+        _id: lactationId,
       });
 
       if (!deleteentry) {
@@ -2198,7 +2203,7 @@ const getLactation = async (req, res) => {
 
     // Fetch livestock
     const fetchedlactation = await lactationCollection.findOne({
-      entryLactationId: lactationId,
+      _id: lactationId,
     });
 
     if (!fetchedlactation) {
@@ -2264,14 +2269,8 @@ const getAllLactations = async (req, res) => {
 
 // pregnancy functions
 const createPregnancy = async (req, res) => {
-  const {
-    breed,
-    tagId,
-    status,
-    breedingDate,
-    gestationPeriod,
-    remark,
-  } = req.body;
+  const { breed, tagId, status, breedingDate, gestationPeriod, remark } =
+    req.body;
   const { farmlandId, livestockType } = req.params;
 
   try {
@@ -2370,14 +2369,8 @@ const createPregnancy = async (req, res) => {
 // update lactation data
 
 const updatePregnancy = async (req, res) => {
-  const {
-    breed,
-   tagId,
-    status,
-    breedingDate,
-    gestationPeriod,
-    remark,
-  } = req.body;
+  const { breed, tagId, status, breedingDate, gestationPeriod, remark } =
+    req.body;
   const { farmlandId, livestockType, pregnancyId } = req.params;
 
   try {
@@ -2448,13 +2441,7 @@ const updatePregnancy = async (req, res) => {
       //   });
       // }
 
-      if (
-        !breed ||
-        !tagId ||
-        !status ||
-        !breedingDate ||
-        !gestationPeriod
-      ) {
+      if (!breed || !tagId || !status || !breedingDate || !gestationPeriod) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please, ensure you fill all fields!",
         });
@@ -2462,8 +2449,7 @@ const updatePregnancy = async (req, res) => {
 
       const updateFields = {};
 
-      if (tagId !== undefined)
-        updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId;
       if (breed !== undefined) updateFields["breed"] = breed;
       if (status !== undefined) updateFields["status"] = status;
       if (breedingDate !== undefined)
@@ -2484,6 +2470,12 @@ const updatePregnancy = async (req, res) => {
       });
     }
   } catch (error) {
+    if (error.code === 11000) {
+      return res
+        .status(StatusCodes.CONFLICT)
+        .json({ message: "Duplicate Tag Id" });
+      // Handle duplicate key error
+    }
     console.log(error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error });
   }

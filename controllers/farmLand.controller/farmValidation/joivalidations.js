@@ -13,20 +13,13 @@ const joiLivestockSchema = Joi.object({
     .required(),
 
   origin: Joi.string()
-    .valid(
-      "Born on farm",
-      "Purchased",
-      "Donated",
-      "Inherited",
-      "Adopted"
-    )
+    .valid("Born on farm", "Purchased", "Donated", "Inherited", "Adopted")
     .required(),
   remark: Joi.string().allow("").optional(),
 });
 
 // finance
 const joiFinanceSchema = Joi.object({
-
   paymentmethod: Joi.string().valid("Cash", "Cheque", "Transfer").required(),
   desc: Joi.string().allow("").optional(),
   transactionDate: Joi.date().required(),
@@ -44,7 +37,7 @@ const joiEventSchema = Joi.object({
 
 // Combined Joi Schema for Lactating Livestock including Milk Composition
 const lactatingLivestockJoiSchema = Joi.object({
-  entryLactationId: Joi.string().trim().required(),
+  tagId: Joi.string().trim().required(),
   milkYield: Joi.number().required(),
   deliveryDate: Joi.date().required(),
   weight: Joi.number().required(),
@@ -60,7 +53,7 @@ const lactatingLivestockJoiSchema = Joi.object({
 
 const pregnancyJoiSchema = Joi.object({
   breed: Joi.string().required(),
-  entryPregnancyId: Joi.string().required(),
+  tagId: Joi.string().required(),
   status: Joi.string().valid("Yes", "No").required(),
   breedingDate: Joi.date().required(),
   gestationPeriod: Joi.number().integer().min(0).required(),
@@ -68,7 +61,11 @@ const pregnancyJoiSchema = Joi.object({
   remark: Joi.string().optional().allow(""),
 });
 
+const joiResetPassword = Joi.object({
+  newPassword: Joi.string().required().min(6).disallow(" ").trim(),
+});
 module.exports = {
+  joiResetPassword,
   joiLivestockSchema,
   joiFinanceSchema,
   joiEventSchema,

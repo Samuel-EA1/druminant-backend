@@ -10,6 +10,7 @@ const pregnancySchema = new Schema({
   tagId: {
     type: String,
     required: true,
+    unique: true,
   },
   status: {
     type: String,

@@ -10,6 +10,9 @@ const clientURL = process.env.CLIENT_URL;
 
 const fs = require("fs");
 const path = require("path");
+const {
+  joiResetPassword,
+} = require("../farmLand.controller/farmValidation/joivalidations");
 
 const getEmailHtml = (username, link, template) => {
   const filePath = path.join(__dirname, `../../utils/${template}.html`);
@@ -43,7 +46,9 @@ const requestPasswordReset = async (req, res) => {
       createdAt: Date.now(),
     }).save();
 
-    const link = `${clientURL}/api/v1/auth/passwordReset?token=${resetToken}&userId=${user._id}`;
+    console.log(hash, "new e ");
+
+    const link = `${clientURL}/reset-password?token=${resetToken}&userId=${user._id}`;
 
     // Send email
     const transporter = nodemailer.createTransport({
@@ -75,6 +80,14 @@ const requestPasswordReset = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { userId, token, newPassword } = req.body;
+
+    const { error } = joiResetPassword.validate({ newPassword });
+    if (error) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: error.details[0].message,
+      });
+    }
+
     const passwordResetToken = await tokenModel.findOne({ userId });
 
     if (!passwordResetToken) {

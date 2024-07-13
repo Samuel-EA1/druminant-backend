@@ -54,9 +54,12 @@
             <p>If you did not request this change, please contact our support team immediately. </p>
         </div>
         <div class="footer">
-            <p>&copy; 2024 Druminant. All rights reserved.</p>
+            <p>&copy; <span id="year"></span> Druminant. All rights reserved.</p>
         </div>
     </div>
+    <script>
+         document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
 </body>
 
 </html>
