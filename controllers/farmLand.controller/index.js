@@ -1747,7 +1747,7 @@ const getEvent = async (req, res) => {
 
     // Fetch event
     const fetchedEvent = await eventCollection.findOne({
-      _id: eventId,
+      tagId: eventId,
     });
 
     if (!fetchedEvent) {
@@ -2203,7 +2203,7 @@ const getLactation = async (req, res) => {
 
     // Fetch livestock
     const fetchedlactation = await lactationCollection.findOne({
-      _id: lactationId,
+      tagId: lactationId,
     });
 
     if (!fetchedlactation) {
@@ -2601,7 +2601,7 @@ const getPregnancy = async (req, res) => {
     // Fetch pregnant livestock
 
     const fetchedPregnantLivestock = await pregnancyCollection.findOne({
-      _id: pregnancyId,
+      tagId: pregnancyId,
     });
 
     if (!fetchedPregnantLivestock) {
