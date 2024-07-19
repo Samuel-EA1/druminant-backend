@@ -5,6 +5,7 @@ var mongoose = require("mongoose");
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
+  
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     throw new UnauthenticatedError("unauthorized access");

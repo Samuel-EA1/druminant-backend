@@ -154,7 +154,7 @@ const sentRequest = async (req, res) => {
         .status(StatusCodes.NOT_FOUND)
         .json({ message: "Staff not found" });
     }
-    console.log(decoded, staff, farmlandInDb);
+
     if (staff.status !== "Reject") {
       return res
         .status(StatusCodes.BAD_REQUEST)
@@ -1712,6 +1712,7 @@ const deleteEvent = async (req, res) => {
 
 const getEvent = async (req, res) => {
   const { farmlandId, livestockType, eventId } = req.params;
+  const {  search} = req.query
 
   // Fetch farmland
   const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
@@ -1745,10 +1746,17 @@ const getEvent = async (req, res) => {
 
     const eventCollection = getEventModel(farmlandId, livestockType);
 
+    let fetchedEvent;
     // Fetch event
-    const fetchedEvent = await eventCollection.findOne({
-      tagId: eventId,
-    });
+    if (search) {
+      fetchedEvent = await eventCollection.find({
+        tagId: eventId,
+      });
+    } else {
+      fetchedEvent = await eventCollection.findOne({
+        tagId: eventId,
+      });
+    }
 
     if (!fetchedEvent) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -1912,7 +1920,6 @@ const createLactation = async (req, res) => {
 
       await lactationCollection.create(newLactation);
 
-      console.log("created");
       return res
         .status(StatusCodes.CREATED)
         .json({ message: "lactation created successfully" });
@@ -1959,7 +1966,6 @@ const updateLactation = async (req, res) => {
     // Fetch farmland
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
 
-    console.log(tagId);
     if (!farmlandInDb) {
       return res
         .status(StatusCodes.NOT_FOUND)
@@ -2035,8 +2041,6 @@ const updateLactation = async (req, res) => {
         });
       }
 
-      console.log({existingTagId})
-
       const updateFields = {};
 
       if (tagId !== undefined) updateFields["tagId"] = tagId;
@@ -2059,7 +2063,7 @@ const updateLactation = async (req, res) => {
         { $set: updateFields },
         { new: true }
       );
-   
+
       if (!updated) {
         return res
           .status(StatusCodes.BAD_REQUEST)
@@ -2211,7 +2215,7 @@ const getLactation = async (req, res) => {
         message: "Lactation record not found",
       });
     }
-    console.log(fetchedlactation);
+
     return res.status(StatusCodes.OK).json({ message: fetchedlactation });
   } catch (error) {
     console.error("Error fetching livestock:", error); // Log the error for debugging

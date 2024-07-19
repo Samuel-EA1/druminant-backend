@@ -13,6 +13,7 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",
     "http://192.168.100.69:3000",
+    "https://druminantfarm.vercel.app/",
     "https://druminant.vercel.app",
   ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
