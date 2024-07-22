@@ -10,12 +10,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./swaggerUi.json");
 
 const corsOptions = {
-  origin: [
-    "http://localhost:3000",
-    "http://192.168.100.69:3000",
-    "https://druminantfarm.vercel.app/",
-    "https://druminant.vercel.app",
-  ],
+  origin: ["http://localhost:3000", "https://druminant.vercel.app"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
   optionsSuccessStatus: 204,
@@ -23,7 +18,7 @@ const corsOptions = {
 
 // ss
 
-// security packages 
+// security packages
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(xss());
