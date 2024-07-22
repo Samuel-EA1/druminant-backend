@@ -33,4 +33,15 @@ const farmlandSchema = new mongoose.Schema({
   ],
 });
 
+
+// Middleware to convert all string fields to lowercase before saving
+farmlandSchema.pre("save", function (next) {
+  for (let path in this.schema.paths) {
+    if (this.schema.paths[path].instance === "String" && this[path]) {
+      this[path] = this[path].toLowerCase();
+    }
+  }
+  next();
+});
+
 module.exports = mongoose.model("Farmlands", farmlandSchema);

@@ -50,4 +50,21 @@ const livestockSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+// Middleware to convert all string fields to lowercase before saving, excluding specified fields
+livestockSchema.pre("save", function (next) {
+  const excludeFields = ["origin", "status", "sex"];
+
+  for (let path in this.schema.paths) {
+    if (
+      this.schema.paths[path].instance === "String" &&
+      this[path] &&
+      !excludeFields.includes(path)
+    ) {
+      this[path] = this[path].toLowerCase();
+    }
+  }
+  next();
+});
+
 module.exports = livestockSchema;

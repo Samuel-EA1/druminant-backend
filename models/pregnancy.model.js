@@ -10,7 +10,9 @@ const pregnancySchema = new Schema({
   tagId: {
     type: String,
     required: true,
+    trim: true,
     unique: true,
+    match: /^[a-zA-Z0-9]+$/,
   },
   status: {
     type: String,
@@ -51,8 +53,22 @@ pregnancySchema.methods.calculateECD = function () {
   return ecd;
 };
 
-// Middleware to set ECD before saving
+ 
+
+
+// Middleware to convert all string fields to lowercase before saving, excluding specified fields
 pregnancySchema.pre("save", function (next) {
+  const excludeFields = ["status"];
+
+  for (let path in this.schema.paths) {
+    if (
+      this.schema.paths[path].instance === "String" &&
+      this[path] &&
+      !excludeFields.includes(path)
+    ) {
+      this[path] = this[path].toLowerCase();
+    }
+  }
   this.ecd = this.calculateECD();
   next();
 });

@@ -414,6 +414,7 @@ const farmLandDetails = async (req, res) => {
 // update livestock data
 
 const updateLivestock = async (req, res) => {
+  console.log('hi')
   const { farmlandId, livestockId, livestockType } = req.params;
   const {
     breed,
@@ -426,8 +427,10 @@ const updateLivestock = async (req, res) => {
     origin,
     remark,
   } = req.body;
-
   tagId;
+
+  livestockId;
+  console.log(livestockId);
   try {
     // Fetch farmland
     const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });
@@ -460,7 +463,7 @@ const updateLivestock = async (req, res) => {
     const livestock = getLivestockModel(farmlandId, livestockType);
 
     // Fetch livestock
-    const fetchedLivestock = await livestock.findOne({ tagId: livestockId });
+    const fetchedLivestock = await livestock.findOne({ _id: livestockId });
 
     if (!fetchedLivestock) {
       return res.status(StatusCodes.NOT_FOUND).json({
@@ -537,7 +540,7 @@ const updateLivestock = async (req, res) => {
       if (remark !== undefined) updateFields["remark"] = remark;
 
       const updated = await livestock.findOneAndUpdate(
-        { tagId: livestockId },
+        { _id: livestockId },
         { $set: updateFields },
         { new: true }
       );
@@ -1146,6 +1149,15 @@ const updateFinance = async (req, res) => {
         });
       }
 
+      if (
+        existingFinance.inCharge !== requester.username &&
+        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+      ) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          message: "Only farmLand Admin or Staffs can create a livestock.",
+        });
+      }
+
       // if (financeEntryId && financeEntryId.includes(" ")) {
       //   return res
       //     .status(StatusCodes.BAD_REQUEST)
@@ -1247,6 +1259,14 @@ const deleteFinance = async (req, res) => {
         });
       }
 
+      if (
+        existingFinance.inCharge !== requester.username &&
+        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+      ) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          message: "Only farmLand Admin or Staffs can create a livestock.",
+        });
+      }
       // delete document
 
       const deleteentry = await FinanceModel.findOneAndDelete({
@@ -1712,7 +1732,7 @@ const deleteEvent = async (req, res) => {
 
 const getEvent = async (req, res) => {
   const { farmlandId, livestockType, eventId } = req.params;
-  const {  search} = req.query
+  const { search } = req.query;
 
   // Fetch farmland
   const farmlandInDb = await farmlandModel.findOne({ farmland: farmlandId });

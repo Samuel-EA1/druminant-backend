@@ -25,6 +25,9 @@ const AdminSchema = new mongoose.Schema({
     maxlength: [15, "Max username length is 15"],
     minlength: [3, "Min username length is 3"],
     unique: true,
+    type: String,
+
+    match: /^[a-zA-Z0-9]+$/,
   },
   password: {
     type: String,

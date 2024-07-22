@@ -15,6 +15,8 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
+      match: /^[a-zA-Z0-9]+$/,
     },
     eventType: {
       type: String,
@@ -27,5 +29,17 @@ const eventSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+// Middleware to convert all string fields to lowercase before saving
+eventSchema.pre("save", function (next) {
+  for (let path in this.schema.paths) {
+    if (this.schema.paths[path].instance === "String" && this[path]) {
+      this[path] = this[path].toLowerCase();
+    }
+  }
+  next();
+});
+
 
 module.exports = eventSchema;

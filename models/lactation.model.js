@@ -8,6 +8,7 @@ const lactatingLivestockSchema = new mongoose.Schema(
       required: true,
       trim: true,
       unique: true,
+      match: /^[a-zA-Z0-9]+$/,
     },
     milkYield: {
       type: Number,
@@ -36,7 +37,7 @@ const lactatingLivestockSchema = new mongoose.Schema(
     },
     snf: {
       type: Number,
-      required: true, 
+      required: true,
     },
     lactose: {
       type: Number,
@@ -61,5 +62,15 @@ const lactatingLivestockSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Middleware to convert all string fields to lowercase before saving
+lactatingLivestockSchema.pre("save", function (next) {
+  for (let path in this.schema.paths) {
+    if (this.schema.paths[path].instance === "String" && this[path]) {
+      this[path] = this[path].toLowerCase();
+    }
+  }
+  next();
+});
 
 module.exports = lactatingLivestockSchema;

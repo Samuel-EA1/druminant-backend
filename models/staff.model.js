@@ -30,6 +30,8 @@ const StaffSchema = new mongoose.Schema({
     minlength: [3, "Min username length is 3"],
     unique: true,
     trim: true,
+
+    match: /^[a-zA-Z0-9]+$/,
   },
   password: {
     type: String,
@@ -64,6 +66,8 @@ StaffSchema.pre("save", async function (next) {
   }
 });
 
+
+
 StaffSchema.methods.createJwt = function () {
   return jwt.sign(
     {
@@ -71,7 +75,7 @@ StaffSchema.methods.createJwt = function () {
       id: this._id,
       username: this.username,
       farmland: this.farmland,
-      status:this.status
+      status: this.status,
     },
     process.env.JWT_SECRET,
     {
