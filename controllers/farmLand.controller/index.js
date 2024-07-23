@@ -1149,14 +1149,13 @@ const updateFinance = async (req, res) => {
         });
       }
 
-      if (
-        existingFinance.inCharge !== requester.username &&
-        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
-      ) {
-        return res.status(StatusCodes.UNAUTHORIZED).json({
-          message: "Only farmLand Admin or Staffs can create a livestock.",
-        });
-      }
+       if (
+  existingFinance.inCharge !== requester.username &&
+  !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+) {
+  return res.status(StatusCodes.UNAUTHORIZED).json({
+    message: "Sorry, only farmland admins or record creators can update this record.",
+  });
 
       // if (financeEntryId && financeEntryId.includes(" ")) {
       //   return res
@@ -1260,13 +1259,13 @@ const deleteFinance = async (req, res) => {
       }
 
       if (
-        existingFinance.inCharge !== requester.username &&
-        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
-      ) {
-        return res.status(StatusCodes.UNAUTHORIZED).json({
-          message: "Only farmLand Admin or Staffs can create a livestock.",
-        });
-      }
+  existingFinance.inCharge !== requester.username &&
+  !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+) {
+  return res.status(StatusCodes.UNAUTHORIZED).json({
+    message: "Sorry, only farmland admins or record creators can delete this record.",
+  });
+}
       // delete document
 
       const deleteentry = await FinanceModel.findOneAndDelete({
