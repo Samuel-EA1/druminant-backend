@@ -1155,7 +1155,8 @@ const updateFinance = async (req, res) => {
 ) {
   return res.status(StatusCodes.UNAUTHORIZED).json({
     message: "Sorry, only farmland admins or record creators can update this record.",
-  });
+  })
+}
 
       // if (financeEntryId && financeEntryId.includes(" ")) {
       //   return res
