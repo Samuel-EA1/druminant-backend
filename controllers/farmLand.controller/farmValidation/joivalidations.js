@@ -1,15 +1,17 @@
 const Joi = require("joi");
 
-// livestock
+// Livestock Schema
 const joiLivestockSchema = Joi.object({
   breed: Joi.string().required().messages({
     "any.required": "Breed is required.",
     "string.base": "Breed must be a string.",
     "string.empty": "Breed cannot be empty.",
   }),
-  birthDate: Joi.date().required().messages({
+  birthDate: Joi.date().required().allow(null).messages({
     "any.required": "Birth date is required.",
     "date.base": "Birth date must be a valid date.",
+    "date.empty": "Birth date cannot be empty.",
+    "date.null": "Birth date cannot be null.",
   }),
   sex: Joi.string().valid("Male", "Female").required().messages({
     "any.required": "Sex is required.",
@@ -48,7 +50,7 @@ const joiLivestockSchema = Joi.object({
   remark: Joi.string().allow("").optional(),
 });
 
-// finance
+// Finance Schema
 const joiFinanceSchema = Joi.object({
   paymentmethod: Joi.string()
     .valid("Cash", "Cheque", "Transfer")
@@ -57,10 +59,16 @@ const joiFinanceSchema = Joi.object({
       "any.required": "Payment method is required.",
       "any.only": "Payment method must be one of Cash, Cheque, or Transfer.",
     }),
-  desc: Joi.string().allow("").optional(),
-  transactionDate: Joi.date().required().messages({
+  desc: Joi.string().required().messages({
+    "any.required": "Description is required.",
+    "string.base": "Description must be a string.",
+    "string.empty": "Description cannot be empty.",
+  }),
+  transactionDate: Joi.date().required().allow(null).messages({
     "any.required": "Transaction date is required.",
     "date.base": "Transaction date must be a valid date.",
+    "date.empty": "Transaction date cannot be empty.",
+    "date.null": "Transaction date cannot be null.",
   }),
   amount: Joi.number().required().messages({
     "any.required": "Amount is required.",
@@ -68,7 +76,7 @@ const joiFinanceSchema = Joi.object({
   }),
 });
 
-// events
+// Event Schema
 const joiEventSchema = Joi.object({
   tagId: Joi.string().trim().alphanum().required().messages({
     "any.required": "Tag ID is required.",
@@ -81,13 +89,15 @@ const joiEventSchema = Joi.object({
     "string.base": "Event type must be a string.",
     "string.empty": "Event type cannot be empty.",
   }),
-  eventDate: Joi.date().required().messages({
+  eventDate: Joi.date().required().allow(null).messages({
     "any.required": "Event date is required.",
     "date.base": "Event date must be a valid date.",
+    "date.empty": "Event date cannot be empty.",
+    "date.null": "Event date cannot be null.",
   }),
 });
 
-// Combined Joi Schema for Lactating Livestock including Milk Composition
+// Lactating Livestock Schema
 const lactatingLivestockJoiSchema = Joi.object({
   tagId: Joi.string().trim().alphanum().required().messages({
     "any.required": "Tag ID is required.",
@@ -99,9 +109,11 @@ const lactatingLivestockJoiSchema = Joi.object({
     "number.base": "Milk yield must be a number.",
     "number.empty": "Milk yield cannot be empty.",
   }),
-  deliveryDate: Joi.date().required().messages({
+  deliveryDate: Joi.date().required().allow(null).messages({
     "any.required": "Delivery date is required.",
     "date.base": "Delivery date must be a valid date.",
+    "date.empty": "Delivery date cannot be empty.",
+    "date.null": "Delivery date cannot be null.",
   }),
   weight: Joi.number().required().messages({
     "any.required": "Weight is required.",
@@ -123,7 +135,7 @@ const lactatingLivestockJoiSchema = Joi.object({
   snf: Joi.number().required().messages({
     "any.required": "Solid Not Fat (SNF) content is required.",
     "number.base": "SNF content must be a number.",
-  }), // Solid Not Fat
+  }),
   lactose: Joi.number().required().messages({
     "any.required": "Lactose content is required.",
     "number.base": "Lactose content must be a number.",
@@ -142,6 +154,7 @@ const lactatingLivestockJoiSchema = Joi.object({
   }),
 });
 
+// Pregnancy Schema
 const pregnancyJoiSchema = Joi.object({
   breed: Joi.string().required().messages({
     "any.required": "Breed is required.",
@@ -157,21 +170,25 @@ const pregnancyJoiSchema = Joi.object({
     "any.required": "Status is required.",
     "any.only": "Status must be either Yes or No.",
   }),
-  breedingDate: Joi.date().required().messages({
+  breedingDate: Joi.date().required().allow(null).messages({
     "any.required": "Breeding date is required.",
     "date.base": "Breeding date must be a valid date.",
+    "date.empty": "Breeding date cannot be empty.",
+    "date.null": "Breeding date cannot be null.",
   }),
   gestationPeriod: Joi.number().integer().min(0).required().messages({
     "any.required": "Gestation period is required.",
     "number.base": "Gestation period must be a number.",
     "number.min": "Gestation period must be at least 0.",
   }),
-  ecd: Joi.date().messages({
+  ecd: Joi.date().allow(null).messages({
     "date.base": "Expected calving date (ECD) must be a valid date.",
+    "date.null": "Expected calving date (ECD) cannot be null.",
   }),
   remark: Joi.string().optional().allow(""),
 });
 
+// Reset Password Schema
 const joiResetPassword = Joi.object({
   newPassword: Joi.string().required().min(6).disallow(" ").trim().messages({
     "any.required": "New password is required.",

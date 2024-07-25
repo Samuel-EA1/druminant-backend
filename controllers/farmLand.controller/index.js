@@ -414,7 +414,7 @@ const farmLandDetails = async (req, res) => {
 // update livestock data
 
 const updateLivestock = async (req, res) => {
-  console.log('hi')
+  console.log("hi");
   const { farmlandId, livestockId, livestockType } = req.params;
   const {
     breed,
@@ -516,7 +516,7 @@ const updateLivestock = async (req, res) => {
 
       if (
         !breed ||
-        !birthDate ||
+        birthDate === "Invalid date" ||
         !sex ||
         !tagId ||
         !tagLocation ||
@@ -532,7 +532,7 @@ const updateLivestock = async (req, res) => {
       if (breed !== undefined) updateFields["breed"] = breed;
       if (birthDate !== undefined) updateFields["birthDate"] = birthDate;
       if (sex !== undefined) updateFields["sex"] = sex;
-      if (tagId !== undefined) updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
       if (tagLocation !== undefined) updateFields["tagLocation"] = tagLocation;
       if (weight !== undefined) updateFields["weight"] = weight;
       if (status !== undefined) updateFields["status"] = status;
@@ -1149,14 +1149,15 @@ const updateFinance = async (req, res) => {
         });
       }
 
-       if (
-  existingFinance.inCharge !== requester.username &&
-  !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
-) {
-  return res.status(StatusCodes.UNAUTHORIZED).json({
-    message: "Sorry, only farmland admins or record creators can update this record.",
-  })
-}
+      if (
+        existingFinance.inCharge !== requester.username &&
+        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+      ) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          message:
+            "Sorry, only farmland admins or record creators can update this record.",
+        });
+      }
 
       // if (financeEntryId && financeEntryId.includes(" ")) {
       //   return res
@@ -1164,7 +1165,12 @@ const updateFinance = async (req, res) => {
       //     .json({ message: "Finance Entry ID should not contain spaces." });
       // }
 
-      if (!desc || !transactionDate || !amount || !paymentmethod) {
+      if (
+        !desc ||
+        transactionDate === "Invalid date" ||
+        !amount ||
+        !paymentmethod
+      ) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please, ensure you fill all fields!",
         });
@@ -1260,13 +1266,14 @@ const deleteFinance = async (req, res) => {
       }
 
       if (
-  existingFinance.inCharge !== requester.username &&
-  !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
-) {
-  return res.status(StatusCodes.UNAUTHORIZED).json({
-    message: "Sorry, only farmland admins or record creators can delete this record.",
-  });
-}
+        existingFinance.inCharge !== requester.username &&
+        !mongoose.Types.ObjectId(farmalndAdmin).equals(requester.id)
+      ) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          message:
+            "Sorry, only farmland admins or record creators can delete this record.",
+        });
+      }
       // delete document
 
       const deleteentry = await FinanceModel.findOneAndDelete({
@@ -1610,14 +1617,14 @@ const updateEvent = async (req, res) => {
       //     .json({ message: "Event Entry ID should not contain spaces." });
       // }
 
-      if (!tagId || !eventType || !eventDate) {
+      if (!tagId || !eventType || eventDate === "Invalid date") {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please, ensure you fill all fields!",
         });
       }
 
       const updateFields = {};
-      if (tagId !== undefined) updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
       if (eventType !== undefined) updateFields["eventType"] = eventType;
       if (eventDate !== undefined) updateFields["eventDate"] = eventDate;
       if (remark !== undefined) updateFields["remark"] = remark;
@@ -2038,7 +2045,7 @@ const updateLactation = async (req, res) => {
       if (
         !tagId ||
         !milkYield ||
-        !deliveryDate ||
+        deliveryDate === "Invalid date" ||
         !weight ||
         !offspringNumber ||
         !fat ||
@@ -2063,7 +2070,7 @@ const updateLactation = async (req, res) => {
 
       const updateFields = {};
 
-      if (tagId !== undefined) updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
       if (milkYield !== undefined) updateFields["milkYield"] = milkYield;
       if (deliveryDate !== undefined)
         updateFields["deliveryDate"] = deliveryDate;
@@ -2465,7 +2472,13 @@ const updatePregnancy = async (req, res) => {
       //   });
       // }
 
-      if (!breed || !tagId || !status || !breedingDate || !gestationPeriod) {
+      if (
+        !breed ||
+        !tagId ||
+        !status ||
+        breedingDate === "Invalid date" ||
+        !gestationPeriod
+      ) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           message: "Please, ensure you fill all fields!",
         });
@@ -2473,7 +2486,7 @@ const updatePregnancy = async (req, res) => {
 
       const updateFields = {};
 
-      if (tagId !== undefined) updateFields["tagId"] = tagId;
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
       if (breed !== undefined) updateFields["breed"] = breed;
       if (status !== undefined) updateFields["status"] = status;
       if (breedingDate !== undefined)
