@@ -11,6 +11,7 @@ const editProfile = async (req, res) => {
   const { userId } = req.params;
   const { email, username, password } = req.body;
   const requesterId = req.user.id;
+  const usernameString = username.toLowerCase();
 
   try {
     let user;
@@ -69,7 +70,7 @@ const editProfile = async (req, res) => {
 
     // Update data
     const updateData = {};
-    if (username !== undefined) updateData["username"] = username;
+    if (username !== undefined) updateData["username"] = usernameString;
     if (email !== undefined) updateData["email"] = email;
     if (password !== undefined) updateData["password"] = password;
 
