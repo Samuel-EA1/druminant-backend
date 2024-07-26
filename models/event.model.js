@@ -15,7 +15,6 @@ const eventSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
       match: /^[a-zA-Z0-9]+$/,
     },
     eventType: {
@@ -30,7 +29,6 @@ const eventSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-
 // Middleware to convert all string fields to lowercase before saving
 eventSchema.pre("save", function (next) {
   for (let path in this.schema.paths) {
@@ -40,6 +38,5 @@ eventSchema.pre("save", function (next) {
   }
   next();
 });
-
 
 module.exports = eventSchema;

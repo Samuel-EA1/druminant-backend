@@ -79,7 +79,6 @@ const joiFinanceSchema = Joi.object({
 // Event Schema
 const joiEventSchema = Joi.object({
   tagId: Joi.string().trim().alphanum().required().messages({
-    "any.required": "Tag ID is required.",
     "string.alphanum": "Tag ID must be alphanumeric.",
     "string.empty": "Tag ID cannot be empty.",
   }),

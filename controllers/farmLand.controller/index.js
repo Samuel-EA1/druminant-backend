@@ -334,7 +334,7 @@ const createLivestock = async (req, res) => {
 
       // Check for duplicate tagId within the same farmland collection
       const existingLivestock = await livestockModel.findOne({
-        tagId,
+        tagId: tagId.toLowerCase(),
       });
       if (existingLivestock) {
         return res
@@ -532,7 +532,7 @@ const updateLivestock = async (req, res) => {
       if (breed !== undefined) updateFields["breed"] = breed;
       if (birthDate !== undefined) updateFields["birthDate"] = birthDate;
       if (sex !== undefined) updateFields["sex"] = sex;
-      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase();
       if (tagLocation !== undefined) updateFields["tagLocation"] = tagLocation;
       if (weight !== undefined) updateFields["weight"] = weight;
       if (status !== undefined) updateFields["status"] = status;
@@ -1482,6 +1482,8 @@ const createEvent = async (req, res) => {
       });
     }
 
+ 
+
     // check if the type is allowed
     if (!["cattle", "sheep", "pig", "goat"].includes(livestockType)) {
       return res
@@ -1536,7 +1538,7 @@ const createEvent = async (req, res) => {
         inCharge: username,
         eventDate: new Date(eventDate),
         eventType,
-        tagId,
+        tagId:tagId.toLowerCase(),
         remark,
       };
 
@@ -1624,7 +1626,7 @@ const updateEvent = async (req, res) => {
       }
 
       const updateFields = {};
-      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase();
       if (eventType !== undefined) updateFields["eventType"] = eventType;
       if (eventDate !== undefined) updateFields["eventDate"] = eventDate;
       if (remark !== undefined) updateFields["remark"] = remark;
@@ -1915,7 +1917,7 @@ const createLactation = async (req, res) => {
       }
       // Check for duplicate tagId within the same farmland collection
       const existingLivestock = await lactationCollection.findOne({
-        tagId,
+        tagId:tagId.toLowerCase(),
       });
 
       if (existingLivestock) {
@@ -2070,7 +2072,7 @@ const updateLactation = async (req, res) => {
 
       const updateFields = {};
 
-      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase();
       if (milkYield !== undefined) updateFields["milkYield"] = milkYield;
       if (deliveryDate !== undefined)
         updateFields["deliveryDate"] = deliveryDate;
@@ -2356,7 +2358,7 @@ const createPregnancy = async (req, res) => {
 
       // Check for duplicate Id within the same farmland collection
       const existingPregnancy = await pregnancyCollection.findOne({
-        tagId,
+        tagId:tagId.toLowerCase(),
       });
       if (existingPregnancy) {
         return res.status(400).json({
@@ -2486,7 +2488,7 @@ const updatePregnancy = async (req, res) => {
 
       const updateFields = {};
 
-      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase()
+      if (tagId !== undefined) updateFields["tagId"] = tagId.toLowerCase();
       if (breed !== undefined) updateFields["breed"] = breed;
       if (status !== undefined) updateFields["status"] = status;
       if (breedingDate !== undefined)
