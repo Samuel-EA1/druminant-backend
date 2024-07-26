@@ -11,7 +11,7 @@ const validateSchema = Joi.object({
 });
 const login = async (req, res) => {
   const { username, password } = req.body;
-
+  const usernameString = username.toLowerCase();
   const { error, value } = validateSchema.validate(req.body);
 
   if (error)
@@ -23,10 +23,10 @@ const login = async (req, res) => {
     let user;
 
     // Check if the user is a farm worker
-    user = await staffModel.findOne({ username });
+    user = await staffModel.findOne({ username:usernameString });
     if (!user) {
       // If not, check if the user is an admin
-      user = await adminModel.findOne({ username });
+      user = await adminModel.findOne({ username:usernameString });
       if (!user) {
         // If neither, throw an error
         return res
@@ -50,8 +50,8 @@ const login = async (req, res) => {
     const { isAdmin } = user;
     const token = user.createJwt();
 
-    console.log(user)
- 
+    console.log(user);
+
     res.status(StatusCodes.OK).json({
       isAdmin,
       username: user.username,

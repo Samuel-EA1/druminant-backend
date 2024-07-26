@@ -16,20 +16,24 @@ const registerSchema = Joi.object({
 
 module.exports = async (req, res) => {
   const { farmland, username, email, password } = req.body;
+  const farmlandName = farmland.toLowerCase();
+  const usernameString = username.toLowerCase();
 
   //  validate request body using
   const { error, value } = registerSchema.validate(req.body);
   if (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-     message: error.details[0].message,
+      message: error.details[0].message,
     });
   }
 
-  const farmlandInDb = await farmLandModel.findOne({ farmland });
-  const usernameInDb = await staffModel.findOne({ username });
+  const farmlandInDb = await farmLandModel.findOne({ farmland: farmlandName });
+  const usernameInDb = await staffModel.findOne({ username: usernameString });
 
   try {
-    const usernameInAdminCollection = await adminModel.findOne({ username });
+    const usernameInAdminCollection = await adminModel.findOne({
+      username: usernameString,
+    });
     const emailInAdminCollection = await adminModel.findOne({ email });
     const emailInStaffCollection = await staffModel.findOne({ email });
 
@@ -37,6 +41,10 @@ module.exports = async (req, res) => {
       return res
         .status(StatusCodes.CONFLICT)
         .json({ message: "Username is already taken" });
+    } else if (username.includes(" ")) {
+      return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ message: "Spaces are not allowed in username!" });
     } else if (emailInAdminCollection || emailInStaffCollection) {
       return res
         .status(StatusCodes.CONFLICT)
@@ -49,10 +57,10 @@ module.exports = async (req, res) => {
 
     // create staff
     const user = await staffModel.create({
-      username,
+      username: usernameString,
       email,
       password,
-      farmland,
+      farmland: farmlandName,
     });
 
     // push user_id to farmland array

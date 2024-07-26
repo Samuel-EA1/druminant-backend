@@ -17,6 +17,8 @@ const registerSchema = Joi.object({
 
 module.exports = async (req, res) => {
   const { username, farmland, email, password } = req.body;
+  const farmlandName = farmland.toLowerCase();
+  const usernameString = username.toLowerCase();
 
   // check if none of the req body is empty.
   //  validate request body using
@@ -28,18 +30,26 @@ module.exports = async (req, res) => {
   }
 
   // check if any of the req body is available or not
-  const usernameInAdminCollection = await adminModel.findOne({ username });
-  const usernameInStaffCollection = await staffModel.findOne({ username });
+  const usernameInAdminCollection = await adminModel.findOne({
+    username: usernameString,
+  });
+  const usernameInStaffCollection = await staffModel.findOne({
+    username: usernameString,
+  });
   const emailInAdminCollection = await adminModel.findOne({ email });
   const emailInStaffCollection = await staffModel.findOne({ email });
   const farmlandInFarmCollection = await farmlandModel.findOne({
-    farmland,
+    farmland: farmlandName,
   });
 
   if (usernameInAdminCollection || usernameInStaffCollection) {
     return res
       .status(StatusCodes.CONFLICT)
       .json({ message: "Username is already taken" });
+  } else if (username.includes(" ")) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Spaces are not allowed in username" });
   } else if (emailInAdminCollection || emailInStaffCollection) {
     return res
       .status(StatusCodes.CONFLICT)
@@ -48,19 +58,25 @@ module.exports = async (req, res) => {
     return res
       .status(StatusCodes.NOT_FOUND)
       .json({ message: "Farmland name is already taken" });
+  } else if (farmland.includes(" ")) {
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ message: "Spaces are not allowed in farmland name" });
   }
 
   try {
     //  create farmland
-    const createFarmland = await farmlandModel.create({ farmland });
+    const createFarmland = await farmlandModel.create({
+      farmland: farmlandName,
+    });
 
     if (createFarmland) {
       // create admin
       const user = await adminModel.create({
-        username,
+        username: usernameString,
         email,
         password,
-        farmland,
+        farmland: farmlandName,
       });
 
       if (user) {
@@ -74,7 +90,9 @@ module.exports = async (req, res) => {
         await adminFarmland.save();
 
         // save farmlandName to admin profile
-        const adminData = await adminModel.findOne({ username });
+        const adminData = await adminModel.findOne({
+          username: usernameString,
+        });
 
         adminData.adminAt = adminFarmland.farmland;
         await adminData.save();
@@ -97,8 +115,8 @@ module.exports = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    await farmlandModel.findOneAndDelete({ farmland });
-    await adminModel.findOneAndDelete({ username });
+    await farmlandModel.findOneAndDelete({ farmland: farmlandName });
+    await adminModel.findOneAndDelete({ username: usernameString });
     throw new Error(error);
   }
 };
